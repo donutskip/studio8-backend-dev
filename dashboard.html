@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Studio8 Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #102f44;
+      color: #fff;
+      padding: 16px 24px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,.08);
+      margin-bottom: 20px;
+    }
+
+    .status {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .member {
+      background: #e6f4ea;
+      color: #1e7f34;
+    }
+
+    .non-member {
+      background: #fff3cd;
+      color: #8a6d1d;
+    }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .service {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .service h3 {
+      margin-top: 0;
+      color: #102f44;
+    }
+
+    .service button {
+      background: #102f44;
+      color: #fff;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .service button:hover {
+      background: #0b2231;
+    }
+
+    .logout {
+      text-align: right;
+      margin-top: 12px;
+    }
+
+    .logout button {
+      background: transparent;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Studio8 Member Dashboard</h1>
+  <div class="logout">
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- STATUS CARD -->
+  <div class="card">
+    <h2>Account Status</h2>
+    <div class="status">
+      <div id="memberBadge" class="badge"></div>
+    </div>
+  </div>
+
+  <!-- SERVICES -->
+  <div class="card">
+    <h2>Select Service</h2>
+    <div class="service-grid" id="services"></div>
+  </div>
+
+</div>
+
+<script>
+  // ---- Session Guard ----
+  const session = JSON.parse(sessionStorage.getItem("studio8_session"));
+
+  if (!session || !session.valid) {
+    window.location.href = "/login";
+  }
+
+  const status = session.status; // MEMBER / NON_MEMBER
+
+  // ---- Status Badge ----
+  const badge = document.getElementById("memberBadge");
+
+  if (status === "MEMBER") {
+    badge.textContent = "Active Member";
+    badge.className = "badge member";
+  } else {
+    badge.textContent = "Non-Member";
+    badge.className = "badge non-member";
+  }
+
+  // ---- Services ----
+  const servicesDiv = document.getElementById("services");
+
+  const services = status === "MEMBER"
+    ? [
+        { name: "BJJ + 360 (Monthly)", price: "Included" },
+        { name: "BJJ (Monthly)", price: "Included" },
+        { name: "360 (Monthly)", price: "Included" }
+      ]
+    : [
+        { name: "BJJ (1-Day Pass)", price: "₱500" },
+        { name: "360 (1-Day Pass)", price: "₱500" }
+      ];
+
+  services.forEach(s => {
+    const div = document.createElement("div");
+    div.className = "service";
+    div.innerHTML = `
+      <h3>${s.name}</h3>
+      <p>${s.price}</p>
+      <button onclick="selectService('${s.name}')">Select</button>
+    `;
+    servicesDiv.appendChild(div);
+  });
+
+  function selectService(service) {
+    alert("Next step: timeslot + payment\n\nSelected: " + service);
+    // Future:
+    // window.location.href = "/timeslots";
+  }
+
+  function logout() {
+    sessionStorage.removeItem("studio8_session");
+    window.location.href = "/login";
+  }
+</script>
+
+</body>
+</html>

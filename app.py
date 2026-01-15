@@ -88,12 +88,9 @@ def login():
             "status": "DENIED"
         }), 401
 
-    # --- Capture metadata ---
-    ip_address = request.headers.get(
-        "X-Forwarded-For",
-        request.remote_addr
-    )
-    user_agent = request.headers.get("User-Agent")
+    # --- Capture request metadata safely ---
+    ip_address = request.headers.get("X-Forwarded-For", request.remote_addr)
+    user_agent = request.headers.get("User-Agent", "unknown")
 
     # --- Log session properly ---
     cur.execute("""
@@ -101,9 +98,10 @@ def login():
             client_id,
             action,
             ip_address,
-            user_agent
+            user_agent,
+            created_at
         )
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, datetime('now','localtime'))
     """, (
         client["id"],
         "LOGIN",
