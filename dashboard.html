@@ -1,197 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Studio8 Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Studio8 Dashboard</title>
 
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 0;
-    }
+<style>
+:root {
+  --navy: #102f44;
+  --gold: #f4c76a;
+  --light: #f6f8fa;
+}
 
-    header {
-      background: #102f44;
-      color: #fff;
-      padding: 16px 24px;
-    }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--light);
+}
 
-    header h1 {
-      margin: 0;
-      font-size: 20px;
-    }
+header {
+  background: var(--navy);
+  color: white;
+  padding: 16px;
+  text-align: center;
+}
 
-    .container {
-      max-width: 900px;
-      margin: 24px auto;
-      padding: 0 16px;
-    }
+.container {
+  max-width: 960px;
+  margin: auto;
+  padding: 16px;
+}
 
-    .card {
-      background: #ffffff;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 8px 25px rgba(0,0,0,.08);
-      margin-bottom: 20px;
-    }
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
 
-    .status {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
+.badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+}
 
-    .badge {
-      padding: 8px 14px;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 14px;
-    }
+.badge.member {
+  background: #d1fae5;
+  color: #065f46;
+}
 
-    .member {
-      background: #e6f4ea;
-      color: #1e7f34;
-    }
+.badge.nonmember {
+  background: #fef3c7;
+  color: #92400e;
+}
 
-    .non-member {
-      background: #fff3cd;
-      color: #8a6d1d;
-    }
+.services {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
 
-    .service-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
+.service {
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  cursor: pointer;
+}
 
-    .service {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 16px;
-      text-align: center;
-    }
+.service.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
 
-    .service h3 {
-      margin-top: 0;
-      color: #102f44;
-    }
+.service.selected {
+  border-color: var(--navy);
+  background: #f0f7fb;
+}
 
-    .service button {
-      background: #102f44;
-      color: #fff;
-      border: none;
-      padding: 10px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 12px;
-    }
+.price {
+  font-weight: 700;
+  margin-top: 8px;
+}
 
-    .service button:hover {
-      background: #0b2231;
-    }
+button {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
 
-    .logout {
-      text-align: right;
-      margin-top: 12px;
-    }
+.primary {
+  background: var(--navy);
+  color: white;
+}
 
-    .logout button {
-      background: transparent;
-      border: none;
-      color: #fff;
-      cursor: pointer;
-      font-size: 14px;
-    }
-  </style>
+.primary:disabled {
+  opacity: 0.4;
+}
+
+.upload-box {
+  border: 2px dashed #cbd5e1;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 12px;
+}
+</style>
 </head>
 
 <body>
 
 <header>
-  <h1>Studio8 Member Dashboard</h1>
-  <div class="logout">
-    <button onclick="logout()">Logout</button>
-  </div>
+  <h2>Studio8 Dashboard</h2>
 </header>
 
 <div class="container">
 
-  <!-- STATUS CARD -->
+  <!-- Account Status -->
   <div class="card">
-    <h2>Account Status</h2>
-    <div class="status">
-      <div id="memberBadge" class="badge"></div>
+    <h3>Account Status</h3>
+    <span id="statusBadge" class="badge nonmember">Non-Member</span>
+
+    <div id="membershipPay" style="margin-top:12px;">
+      <p><strong>Annual Membership:</strong> ₱600 / year</p>
+      <div class="upload-box">
+        📎 Upload Membership Payment Proof  
+        <br><small>(Forminator embed here)</small>
+      </div>
     </div>
   </div>
 
-  <!-- SERVICES -->
+  <!-- Select Service -->
   <div class="card">
-    <h2>Select Service</h2>
-    <div class="service-grid" id="services"></div>
+    <h3>Select Service</h3>
+
+    <div class="services" id="services">
+      <!-- Services injected by JS -->
+    </div>
+  </div>
+
+  <!-- Payment -->
+  <div class="card" id="paymentCard" style="display:none;">
+    <h3>Upload Payment Proof</h3>
+    <div class="upload-box">
+      📎 Upload Session Payment Proof  
+      <br><small>(Forminator embed here)</small>
+    </div>
+  </div>
+
+  <!-- Login to Training -->
+  <div class="card">
+    <button id="loginBtn" class="primary" disabled>
+      Login to Training
+    </button>
   </div>
 
 </div>
 
 <script>
-  // ---- Session Guard ----
-  const session = JSON.parse(sessionStorage.getItem("studio8_session"));
+const session = JSON.parse(sessionStorage.getItem("studio8_session") || "{}");
+const isMember = session.status === "MEMBER";
 
-  if (!session || !session.valid) {
-    window.location.href = "/login";
-  }
+const servicesData = [
+  { id:"bjj_day", name:"BJJ – 1 Day Pass", member:400, non:450 },
+  { id:"360_day", name:"360 – 1 Day Pass", member:300, non:350 },
+  { id:"bjj_month", name:"BJJ – Monthly", member:3000, non:3300 },
+  { id:"360_month", name:"360 – Monthly", member:2200, non:2500 },
+  { id:"combo_month", name:"BJJ + 360 – Monthly", member:4500, non:5000 }
+];
 
-  const status = session.status; // MEMBER / NON_MEMBER
+const servicesEl = document.getElementById("services");
+let selected = null;
 
-  // ---- Status Badge ----
-  const badge = document.getElementById("memberBadge");
+document.getElementById("statusBadge").className =
+  "badge " + (isMember ? "member" : "nonmember");
+document.getElementById("statusBadge").textContent =
+  isMember ? "Member" : "Non-Member";
 
-  if (status === "MEMBER") {
-    badge.textContent = "Active Member";
-    badge.className = "badge member";
-  } else {
-    badge.textContent = "Non-Member";
-    badge.className = "badge non-member";
-  }
+if (isMember) document.getElementById("membershipPay").style.display = "none";
 
-  // ---- Services ----
-  const servicesDiv = document.getElementById("services");
+servicesData.forEach(s => {
+  const div = document.createElement("div");
+  div.className = "service";
+  div.innerHTML = `
+    <strong>${s.name}</strong>
+    <div class="price">₱${isMember ? s.member : s.non}</div>
+  `;
+  div.onclick = () => selectService(div);
+  servicesEl.appendChild(div);
+});
 
-  const services = status === "MEMBER"
-    ? [
-        { name: "BJJ + 360 (Monthly)", price: "Included" },
-        { name: "BJJ (Monthly)", price: "Included" },
-        { name: "360 (Monthly)", price: "Included" }
-      ]
-    : [
-        { name: "BJJ (1-Day Pass)", price: "₱500" },
-        { name: "360 (1-Day Pass)", price: "₱500" }
-      ];
+function selectService(el) {
+  if (selected) return;
 
-  services.forEach(s => {
-    const div = document.createElement("div");
-    div.className = "service";
-    div.innerHTML = `
-      <h3>${s.name}</h3>
-      <p>${s.price}</p>
-      <button onclick="selectService('${s.name}')">Select</button>
-    `;
-    servicesDiv.appendChild(div);
+  selected = el;
+  el.classList.add("selected");
+
+  document.querySelectorAll(".service").forEach(s => {
+    if (s !== el) s.classList.add("disabled");
   });
 
-  function selectService(service) {
-    alert("Next step: timeslot + payment\n\nSelected: " + service);
-    // Future:
-    // window.location.href = "/timeslots";
-  }
+  document.getElementById("paymentCard").style.display = "block";
 
-  function logout() {
-    sessionStorage.removeItem("studio8_session");
-    window.location.href = "/login";
-  }
+  // simulate upload success later
+  setTimeout(() => {
+    document.getElementById("loginBtn").disabled = false;
+  }, 3000);
+}
+
+document.getElementById("loginBtn").onclick = () => {
+  alert("Training login recorded");
+};
 </script>
 
 </body>
