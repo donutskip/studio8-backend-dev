@@ -4,7 +4,10 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=[
+    "https://wp.studio8maf.com",
+    "https://studio8maf.com"
+])
 
 DB_PATH = "studio8.db"
 
