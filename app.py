@@ -88,19 +88,35 @@ def login():
             "status": "DENIED"
         }), 401
 
-    # Log session
+    # --- Capture metadata ---
+    ip_address = request.headers.get(
+        "X-Forwarded-For",
+        request.remote_addr
+    )
+    user_agent = request.headers.get("User-Agent")
+
+    # --- Log session properly ---
     cur.execute("""
-        INSERT INTO sessions (client_id, service)
-        VALUES (?, ?)
-    """, (client["id"], "LOGIN"))
+        INSERT INTO sessions (
+            client_id,
+            action,
+            ip_address,
+            user_agent
+        )
+        VALUES (?, ?, ?, ?)
+    """, (
+        client["id"],
+        "LOGIN",
+        ip_address,
+        user_agent
+    ))
 
     conn.commit()
     conn.close()
 
     return jsonify({
         "valid": True,
-        "membership_type": client["status"],  # MEMBER | NON_MEMBER
-        "notes": "Login successful"
+        "status": client["status"]  # MEMBER / NON_MEMBER
     })
 
 

@@ -24,12 +24,14 @@
     h2 {
       margin-bottom: 16px;
       text-align: center;
+      color: #102f44;
     }
 
     label {
       display: block;
       margin-top: 14px;
       font-weight: 600;
+      color: #102f44;
     }
 
     select, input, button {
@@ -46,7 +48,7 @@
 
     button {
       margin-top: 22px;
-      background: #111;
+      background: #102f44;
       color: #fff;
       border: none;
       border-radius: 6px;
@@ -54,13 +56,21 @@
     }
 
     button:hover {
-      background: #000;
+      background: #0c2435;
     }
 
     .error {
       color: #b00020;
       margin-top: 14px;
       text-align: center;
+      font-weight: 600;
+    }
+
+    .success {
+      color: #006400;
+      margin-top: 14px;
+      text-align: center;
+      font-weight: 600;
     }
 
     .hidden {
@@ -90,7 +100,7 @@
 
     <button onclick="login()">Login</button>
 
-    <div id="error" class="error hidden"></div>
+    <div id="message" class="hidden"></div>
   </div>
 
   <script>
@@ -101,6 +111,8 @@
 
       try {
         const res = await fetch(`${API}/clients`);
+        if (!res.ok) throw new Error("Failed to fetch clients");
+
         const clients = await res.json();
 
         select.innerHTML = '<option value="">Select client</option>';
@@ -113,7 +125,7 @@
         });
 
       } catch (err) {
-        console.error("Failed to load clients", err);
+        console.error(err);
         select.innerHTML =
           '<option value="">Unable to load clients</option>';
       }
@@ -122,34 +134,53 @@
     async function login() {
       const client_code = document.getElementById("client_code").value;
       const pin = document.getElementById("pin").value;
-      const error = document.getElementById("error");
+      const message = document.getElementById("message");
 
-      error.classList.add("hidden");
+      message.className = "hidden";
+      message.textContent = "";
 
       if (!client_code || !pin) {
-        error.textContent = "Please select a client and enter your PIN";
-        error.classList.remove("hidden");
+        message.textContent = "Please select a client and enter your PIN";
+        message.className = "error";
         return;
       }
 
-      const res = await fetch(`${API}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ client_code, pin })
-      });
+      let res, data;
 
-      const data = await res.json();
+      try {
+        res = await fetch(`${API}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ client_code, pin })
+        });
+      } catch {
+        message.textContent = "Unable to reach server";
+        message.className = "error";
+        return;
+      }
+
+      try {
+        data = await res.json();
+      } catch {
+        message.textContent = "Invalid server response";
+        message.className = "error";
+        return;
+      }
 
       if (!data.valid) {
-        error.textContent = "Invalid client or PIN";
-        error.classList.remove("hidden");
+        message.textContent = "Invalid client or PIN";
+        message.className = "error";
         return;
       }
 
       sessionStorage.setItem("studio8_session", JSON.stringify(data));
 
-      // TEMP: redirect to dashboard
-      window.location.href = "/dashboard";
+      message.textContent = "Login successful";
+      message.className = "success";
+
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 600);
     }
 
     document.addEventListener("DOMContentLoaded", loadClients);
