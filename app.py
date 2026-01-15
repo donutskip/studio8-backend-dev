@@ -34,7 +34,8 @@ def health():
 
 
 # -------------------
-# Get ACTIVE client codes (for dropdown)
+# Get ALL client codes (for dropdown)
+# MEMBER and NON_MEMBER both included
 # -------------------
 @app.route("/clients", methods=["GET"])
 def get_clients():
@@ -44,7 +45,6 @@ def get_clients():
     cur.execute("""
         SELECT client_code
         FROM clients
-        WHERE status = 'ACTIVE'
         ORDER BY client_code ASC
     """)
 
@@ -56,6 +56,7 @@ def get_clients():
 
 # -------------------
 # Login endpoint
+# MEMBER and NON_MEMBER both allowed
 # -------------------
 @app.route("/login", methods=["POST"])
 def login():
@@ -98,13 +99,13 @@ def login():
 
     return jsonify({
         "valid": True,
-        "status": client["status"],
-        "notes": "Manual verification pending"
+        "membership_type": client["status"],  # MEMBER | NON_MEMBER
+        "notes": "Login successful"
     })
 
 
 # -------------------
-# Run app
+# Run app (dev only)
 # -------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
