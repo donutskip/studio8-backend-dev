@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Studio8 Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f6f6f6;
+      padding: 40px;
+    }
+
+    .card {
+      max-width: 420px;
+      margin: auto;
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+
+    h2 {
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: 600;
+    }
+
+    select, input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      font-size: 15px;
+    }
+
+    select, input {
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      margin-top: 22px;
+      background: #111;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #000;
+    }
+
+    .error {
+      color: #b00020;
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+    <h2>Studio8 Login</h2>
+
+    <label for="client_code">Client Code</label>
+    <select id="client_code">
+      <option value="">Loading clients...</option>
+    </select>
+
+    <label for="pin">PIN</label>
+    <input
+      type="password"
+      id="pin"
+      placeholder="4-digit PIN"
+      inputmode="numeric"
+      maxlength="4"
+    />
+
+    <button onclick="login()">Login</button>
+
+    <div id="error" class="error hidden"></div>
+  </div>
+
+  <script>
+    const API = "https://api.donutskip.com";
+
+    async function loadClients() {
+      const select = document.getElementById("client_code");
+
+      try {
+        const res = await fetch(`${API}/clients`);
+        const clients = await res.json();
+
+        select.innerHTML = '<option value="">Select client</option>';
+
+        clients.forEach(code => {
+          const opt = document.createElement("option");
+          opt.value = code;
+          opt.textContent = code;
+          select.appendChild(opt);
+        });
+
+      } catch (err) {
+        console.error("Failed to load clients", err);
+        select.innerHTML =
+          '<option value="">Unable to load clients</option>';
+      }
+    }
+
+    async function login() {
+      const client_code = document.getElementById("client_code").value;
+      const pin = document.getElementById("pin").value;
+      const error = document.getElementById("error");
+
+      error.classList.add("hidden");
+
+      if (!client_code || !pin) {
+        error.textContent = "Please select a client and enter your PIN";
+        error.classList.remove("hidden");
+        return;
+      }
+
+      const res = await fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_code, pin })
+      });
+
+      const data = await res.json();
+
+      if (!data.valid) {
+        error.textContent = "Invalid client or PIN";
+        error.classList.remove("hidden");
+        return;
+      }
+
+      sessionStorage.setItem("studio8_session", JSON.stringify(data));
+
+      // TEMP: redirect to dashboard
+      window.location.href = "/dashboard";
+    }
+
+    document.addEventListener("DOMContentLoaded", loadClients);
+  </script>
+
+</body>
+</html>
