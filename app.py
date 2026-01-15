@@ -1,20 +1,22 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import sqlite3
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app)  # allow WordPress / browser calls
+CORS(app)  # Allow WordPress / browser calls
 
-# --- TEMP IN-MEMORY STORE (Phase 3) ---
-# Later this becomes SQLite / MySQL
-CLIENTS = {
-    "test": {
-        "pin": "1234",
-        "status": "ACTIVE",
-        "verified": False
-    }
-}
+DB_PATH = "studio8.db"
 
+
+# ---------- Database Helper ----------
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+# ---------- Health Check ----------
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({
@@ -23,10 +25,11 @@ def health():
         "time": datetime.utcnow().isoformat()
     })
 
+
+# ---------- Login Endpoint ----------
 @app.route("/login", methods=["POST"])
 def login():
     data = request.json or {}
-
     client_code = data.get("client_code")
     pin = data.get("pin")
 
@@ -36,13 +39,39 @@ def login():
             "error": "Missing client_code or pin"
         }), 400
 
-    client = CLIENTS.get(client_code)
+    db = get_db()
+    cur = db.cursor()
 
-    if not client or client["pin"] != pin:
+    cur.execute("""
+        SELECT id, pin_hash, status
+        FROM clients
+        WHERE client_code = ?
+    """, (client_code,))
+
+    client = cur.fetchone()
+
+    if not client:
+        db.close()
         return jsonify({
             "valid": False,
             "status": "DENIED"
         }), 401
+
+    if client["pin_hash"] != pin:
+        db.close()
+        return jsonify({
+            "valid": False,
+            "status": "DENIED"
+        }), 401
+
+    # Optional: log session (Phase 3 ready)
+    cur.execute("""
+        INSERT INTO sessions (client_id, service)
+        VALUES (?, ?)
+    """, (client["id"], "LOGIN"))
+
+    db.commit()
+    db.close()
 
     return jsonify({
         "valid": True,
@@ -50,5 +79,7 @@ def login():
         "notes": "Manual verification pending"
     })
 
+
+# ---------- Run ----------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
