@@ -1,3 +1,8 @@
+-- =========================
+-- Studio8 Backend Schema
+-- =========================
+
+
 CREATE TABLE IF NOT EXISTS clients (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   client_code TEXT UNIQUE NOT NULL,
