@@ -1,22 +1,26 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 import sqlite3
 from datetime import datetime
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Allow WordPress / browser calls
+CORS(app)
 
 DB_PATH = "studio8.db"
 
 
-# ---------- Database Helper ----------
+# -------------------
+# DB helper
+# -------------------
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-# ---------- Health Check ----------
+# -------------------
+# Health check
+# -------------------
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({
@@ -26,7 +30,30 @@ def health():
     })
 
 
-# ---------- Login Endpoint ----------
+# -------------------
+# Get ACTIVE client codes (for dropdown)
+# -------------------
+@app.route("/clients", methods=["GET"])
+def get_clients():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT client_code
+        FROM clients
+        WHERE status = 'ACTIVE'
+        ORDER BY client_code ASC
+    """)
+
+    rows = cur.fetchall()
+    conn.close()
+
+    return jsonify([row["client_code"] for row in rows])
+
+
+# -------------------
+# Login endpoint
+# -------------------
 @app.route("/login", methods=["POST"])
 def login():
     data = request.json or {}
@@ -39,8 +66,8 @@ def login():
             "error": "Missing client_code or pin"
         }), 400
 
-    db = get_db()
-    cur = db.cursor()
+    conn = get_db()
+    cur = conn.cursor()
 
     cur.execute("""
         SELECT id, pin_hash, status
@@ -50,28 +77,21 @@ def login():
 
     client = cur.fetchone()
 
-    if not client:
-        db.close()
+    if not client or client["pin_hash"] != pin:
+        conn.close()
         return jsonify({
             "valid": False,
             "status": "DENIED"
         }), 401
 
-    if client["pin_hash"] != pin:
-        db.close()
-        return jsonify({
-            "valid": False,
-            "status": "DENIED"
-        }), 401
-
-    # Optional: log session (Phase 3 ready)
+    # Log session
     cur.execute("""
         INSERT INTO sessions (client_id, service)
         VALUES (?, ?)
     """, (client["id"], "LOGIN"))
 
-    db.commit()
-    db.close()
+    conn.commit()
+    conn.close()
 
     return jsonify({
         "valid": True,
@@ -80,6 +100,8 @@ def login():
     })
 
 
-# ---------- Run ----------
+# -------------------
+# Run app
+# -------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
