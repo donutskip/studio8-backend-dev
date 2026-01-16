@@ -1,16 +1,30 @@
 import sqlite3
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 
+# -------------------
+# App setup
+# -------------------
 app = Flask(__name__)
-CORS(app, origins=[
-    "https://wp.studio8maf.com",
-    "https://studio8maf.com"
-])
+app.secret_key = "change-this-secret-in-prod"
+
+# REQUIRED for cross-domain cookies (WordPress → Flask)
+app.config.update(
+    SESSION_COOKIE_SAMESITE="None",
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True
+)
+CORS(
+    app,
+    supports_credentials=True,
+    origins=[
+        "https://wp.studio8maf.com",
+        "https://studio8maf.com"
+    ]
+)
 
 DB_PATH = "studio8.db"
-
 
 # -------------------
 # DB helper
@@ -19,7 +33,6 @@ def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
-
 
 # -------------------
 # Health check
@@ -32,31 +45,22 @@ def health():
         "time": datetime.utcnow().isoformat()
     })
 
-
 # -------------------
-# Get ALL client codes (for dropdown)
-# MEMBER and NON_MEMBER both included
+# Client codes (dropdown)
 # -------------------
 @app.route("/clients", methods=["GET"])
 def get_clients():
     conn = get_db()
     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT client_code
-        FROM clients
-        ORDER BY client_code ASC
-    """)
-
+    cur.execute("SELECT client_code FROM clients ORDER BY client_code ASC")
     rows = cur.fetchall()
     conn.close()
 
     return jsonify([row["client_code"] for row in rows])
 
-
 # -------------------
-# Login endpoint
-# MEMBER and NON_MEMBER both allowed
+# Login
 # -------------------
 @app.route("/login", methods=["POST"])
 def login():
@@ -65,34 +69,31 @@ def login():
     pin = data.get("pin")
 
     if not client_code or not pin:
-        return jsonify({
-            "valid": False,
-            "error": "Missing client_code or pin"
-        }), 400
+        return jsonify({"valid": False, "error": "Missing credentials"}), 400
 
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT id, pin_hash, status
+        SELECT id, full_name, pin_hash, status
         FROM clients
         WHERE client_code = ?
     """, (client_code,))
-
     client = cur.fetchone()
 
     if not client or client["pin_hash"] != pin:
         conn.close()
-        return jsonify({
-            "valid": False,
-            "status": "DENIED"
-        }), 401
+        return jsonify({"valid": False, "status": "DENIED"}), 401
 
-    # --- Capture request metadata safely ---
+    # ---- Persist session ----
+    session.clear()
+    session["client_id"] = client["id"]
+
+    # ---- Capture metadata ----
     ip_address = request.headers.get("X-Forwarded-For", request.remote_addr)
     user_agent = request.headers.get("User-Agent", "unknown")
 
-    # --- Log session properly ---
+    # ---- Log login (ALWAYS) ----
     cur.execute("""
         INSERT INTO sessions (
             client_id,
@@ -101,10 +102,9 @@ def login():
             user_agent,
             created_at
         )
-        VALUES (?, ?, ?, ?, datetime('now','localtime'))
+        VALUES (?, 'LOGIN', ?, ?, datetime('now','localtime'))
     """, (
         client["id"],
-        "LOGIN",
         ip_address,
         user_agent
     ))
@@ -114,12 +114,49 @@ def login():
 
     return jsonify({
         "valid": True,
-        "status": client["status"]  # MEMBER / NON_MEMBER
+        "full_name": client["full_name"],
+        "status": client["status"]   # MEMBER / NON_MEMBER
     })
 
+# -------------------
+# Current session
+# -------------------
+@app.route("/me", methods=["GET"])
+def me():
+    client_id = session.get("client_id")
+    if not client_id:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT full_name, status
+        FROM clients
+        WHERE id = ?
+    """, (client_id,))
+    client = cur.fetchone()
+    conn.close()
+
+    if not client:
+        session.clear()
+        return jsonify({"error": "Session invalid"}), 401
+
+    return jsonify({
+        "full_name": client["full_name"],
+        "status": client["status"]
+    })
 
 # -------------------
-# Run app (dev only)
+# Logout
+# -------------------
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"success": True})
+
+# -------------------
+# Run
 # -------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

@@ -106,15 +106,20 @@
   <script>
     const API = "https://api.donutskip.com";
 
+    /* ---------------------------
+       Load client codes
+    --------------------------- */
     async function loadClients() {
       const select = document.getElementById("client_code");
 
       try {
-        const res = await fetch(`${API}/clients`);
+        const res = await fetch(`${API}/clients`, {
+          credentials: "include" // safe + consistent
+        });
+
         if (!res.ok) throw new Error("Failed to fetch clients");
 
         const clients = await res.json();
-
         select.innerHTML = '<option value="">Select client</option>';
 
         clients.forEach(code => {
@@ -131,6 +136,9 @@
       }
     }
 
+    /* ---------------------------
+       Login handler
+    --------------------------- */
     async function login() {
       const client_code = document.getElementById("client_code").value;
       const pin = document.getElementById("pin").value;
@@ -145,42 +153,42 @@
         return;
       }
 
-      let res, data;
-
       try {
-        res = await fetch(`${API}/login`, {
+        const res = await fetch(`${API}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include", // 🔑 CRITICAL FIX
           body: JSON.stringify({ client_code, pin })
         });
-      } catch {
+
+        const data = await res.json();
+
+        if (!data.valid) {
+          message.textContent = "Invalid client or PIN";
+          message.className = "error";
+          return;
+        }
+
+        /* ✅ STORE EXACT KEY DASHBOARD EXPECTS */
+        sessionStorage.setItem(
+          "studio8_user",
+          JSON.stringify({
+            full_name: data.full_name,
+            status: data.status
+          })
+        );
+
+        message.textContent = "Login successful";
+        message.className = "success";
+
+        /* ✅ HARD REDIRECT */
+        window.location.href = "/dashboard/";
+
+      } catch (err) {
+        console.error(err);
         message.textContent = "Unable to reach server";
         message.className = "error";
-        return;
       }
-
-      try {
-        data = await res.json();
-      } catch {
-        message.textContent = "Invalid server response";
-        message.className = "error";
-        return;
-      }
-
-      if (!data.valid) {
-        message.textContent = "Invalid client or PIN";
-        message.className = "error";
-        return;
-      }
-
-      sessionStorage.setItem("studio8_session", JSON.stringify(data));
-
-      message.textContent = "Login successful";
-      message.className = "success";
-
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 600);
     }
 
     document.addEventListener("DOMContentLoaded", loadClients);

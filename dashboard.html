@@ -1,220 +1,276 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
 <title>Studio8 Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 :root {
   --navy: #102f44;
-  --gold: #f4c76a;
-  --light: #f6f8fa;
+  --navy-soft: #143c55;
+  --gold: #f4c26b;
+  --white: #ffffff;
 }
 
 body {
   margin: 0;
+  background: #f6f8fa;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--light);
-}
-
-header {
-  background: var(--navy);
-  color: white;
-  padding: 16px;
-  text-align: center;
+  color: #0f172a;
 }
 
 .container {
-  max-width: 960px;
-  margin: auto;
-  padding: 16px;
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 20px;
 }
 
 .card {
-  background: white;
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 16px;
+  background: var(--navy);
+  border-radius: 14px;
+  padding: 28px;
+  margin-bottom: 28px;
+  color: var(--white);
+}
+
+.welcome h2 {
+  margin: 0 0 10px;
+  font-size: 26px;
 }
 
 .badge {
   display: inline-block;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 999px;
+  font-size: 13px;
   font-weight: 600;
-  font-size: 14px;
 }
 
-.badge.member {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.badge.nonmember {
-  background: #fef3c7;
-  color: #92400e;
-}
+.badge.member { background: #1e6091; }
+.badge.non-member { background: #8a6d1d; }
 
 .services {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .service {
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 14px;
+  background: var(--navy-soft);
+  border-radius: 14px;
+  padding: 20px;
   cursor: pointer;
-}
-
-.service.disabled {
-  opacity: 0.4;
-  pointer-events: none;
+  border: 2px solid transparent;
 }
 
 .service.selected {
-  border-color: var(--navy);
-  background: #f0f7fb;
+  border-color: var(--gold);
 }
 
-.price {
-  font-weight: 700;
-  margin-top: 8px;
+.service h4 { margin: 0 0 8px; }
+.price { font-size: 20px; font-weight: 700; color: var(--gold); }
+
+.upload-box {
+  margin-top: 20px;
+  padding: 20px;
+  border: 2px dashed #355f77;
+  border-radius: 12px;
+  text-align: center;
+  display: none;
 }
+
+.actions { margin-top: 20px; }
 
 button {
   width: 100%;
-  padding: 14px;
-  border-radius: 8px;
-  border: none;
+  padding: 16px;
+  border-radius: 12px;
   font-size: 16px;
+  font-weight: 600;
+  border: none;
   cursor: pointer;
 }
 
-.primary {
-  background: var(--navy);
-  color: white;
+button.primary { background: var(--gold); color: #000; }
+button.disabled { background: #9aa7b1; cursor: not-allowed; }
+
+.membership-box { margin-top: 18px; }
+.membership-box button {
+  background: transparent;
+  color: var(--gold);
+  border: 2px solid var(--gold);
 }
 
-.primary:disabled {
-  opacity: 0.4;
-}
-
-.upload-box {
-  border: 2px dashed #cbd5e1;
+.membership-upload {
+  display: none;
+  margin-top: 14px;
+  border: 2px dashed #355f77;
   padding: 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   text-align: center;
-  margin-top: 12px;
+}
+
+/* ================================
+   FIX TEXT CONTRAST ON DARK CARDS
+================================ */
+
+/* Force all text inside cards to be readable */
+.card,
+.card * {
+  color: #ffffff;
+}
+
+/* Service titles */
+.service h4 {
+  color: #ffffff !important;
+}
+
+/* Section headers inside cards */
+.card h3,
+.card h2 {
+  color: #ffffff !important;
+}
+
+/* Prices already gold, keep them */
+.service .price {
+  color: #f4c26b !important;
+}
+
+/* Disabled button text */
+button.disabled {
+  color: #ffffff !important;
+}
+
+/* Login to Training button */
+#loginBtn {
+  color: #ffffff;
+}
+
+/* Membership CTA */
+.membership-box button {
+  color: #f4c26b !important;
+}
+
+/* Upload box text */
+.upload-box,
+.membership-upload {
+  color: #ffffff;
 }
 </style>
 </head>
 
 <body>
 
-<header>
-  <h2>Studio8 Dashboard</h2>
-</header>
+<script>
+/* -----------------------------------
+   HARD GUARD — PREVENT WORDPRESS LOOP
+------------------------------------ */
+const userRaw = sessionStorage.getItem("studio8_user");
+if (!userRaw) {
+  document.body.innerHTML = `
+    <div style="padding:60px;font-family:sans-serif">
+      <h2>Session expired</h2>
+      <p>Please log in again.</p>
+    </div>`;
+  throw new Error("No session");
+}
+</script>
 
 <div class="container">
 
-  <!-- Account Status -->
-  <div class="card">
-    <h3>Account Status</h3>
-    <span id="statusBadge" class="badge nonmember">Non-Member</span>
-
-    <div id="membershipPay" style="margin-top:12px;">
-      <p><strong>Annual Membership:</strong> ₱600 / year</p>
-      <div class="upload-box">
-        📎 Upload Membership Payment Proof  
-        <br><small>(Forminator embed here)</small>
-      </div>
-    </div>
+  <!-- Welcome -->
+  <div class="card welcome">
+    <h2 id="welcomeText"></h2>
+    <span id="statusBadge" class="badge"></span>
   </div>
 
-  <!-- Select Service -->
+  <!-- Services -->
   <div class="card">
     <h3>Select Service</h3>
 
-    <div class="services" id="services">
-      <!-- Services injected by JS -->
-    </div>
-  </div>
+    <div class="services" id="services"></div>
 
-  <!-- Payment -->
-  <div class="card" id="paymentCard" style="display:none;">
-    <h3>Upload Payment Proof</h3>
-    <div class="upload-box">
-      📎 Upload Session Payment Proof  
-      <br><small>(Forminator embed here)</small>
+    <div class="upload-box" id="serviceUpload">
+      <strong>Upload proof of payment</strong><br><br>
+      <input type="file" id="serviceProof">
     </div>
-  </div>
 
-  <!-- Login to Training -->
-  <div class="card">
-    <button id="loginBtn" class="primary" disabled>
-      Login to Training
-    </button>
+    <div class="actions">
+      <button id="loginBtn" class="disabled" disabled>
+        Login to Training
+      </button>
+    </div>
+
+    <div class="membership-box">
+      <button onclick="toggleMembershipUpload()">
+        Pay Annual Membership (₱600 / year)
+      </button>
+
+      <div class="membership-upload" id="membershipUpload">
+        <strong>Upload proof of membership payment</strong><br><br>
+        <input type="file">
+      </div>
+    </div>
   </div>
 
 </div>
 
 <script>
-const session = JSON.parse(sessionStorage.getItem("studio8_session") || "{}");
-const isMember = session.status === "MEMBER";
+/* --- Load user --- */
+const user = JSON.parse(userRaw);
+const firstName = user.full_name.split(" ")[0];
+const status = user.status || "NON_MEMBER";
 
-const servicesData = [
-  { id:"bjj_day", name:"BJJ – 1 Day Pass", member:400, non:450 },
-  { id:"360_day", name:"360 – 1 Day Pass", member:300, non:350 },
-  { id:"bjj_month", name:"BJJ – Monthly", member:3000, non:3300 },
-  { id:"360_month", name:"360 – Monthly", member:2200, non:2500 },
-  { id:"combo_month", name:"BJJ + 360 – Monthly", member:4500, non:5000 }
-];
+document.getElementById("welcomeText").textContent = `Welcome, ${firstName}`;
+
+const badge = document.getElementById("statusBadge");
+badge.textContent = status === "MEMBER" ? "Member" : "Non-Member";
+badge.classList.add(status === "MEMBER" ? "member" : "non-member");
+
+/* --- Rates --- */
+const rates = {
+  MEMBER: [
+    { id: "bjj_day", name: "BJJ – 1 Day Pass", price: 400 },
+    { id: "360_day", name: "360 – 1 Day Pass", price: 300 },
+    { id: "bjj_month", name: "BJJ – Monthly", price: 3000 },
+    { id: "360_month", name: "360 – Monthly", price: 2200 },
+    { id: "combo", name: "BJJ + 360 – Monthly", price: 4500 }
+  ],
+  NON_MEMBER: [
+    { id: "bjj_day", name: "BJJ – 1 Day Pass", price: 450 },
+    { id: "360_day", name: "360 – 1 Day Pass", price: 350 },
+    { id: "bjj_month", name: "BJJ – Monthly", price: 3300 },
+    { id: "360_month", name: "360 – Monthly", price: 2500 },
+    { id: "combo", name: "BJJ + 360 – Monthly", price: 5000 }
+  ]
+};
 
 const servicesEl = document.getElementById("services");
-let selected = null;
+const uploadBox = document.getElementById("serviceUpload");
+const loginBtn = document.getElementById("loginBtn");
 
-document.getElementById("statusBadge").className =
-  "badge " + (isMember ? "member" : "nonmember");
-document.getElementById("statusBadge").textContent =
-  isMember ? "Member" : "Non-Member";
-
-if (isMember) document.getElementById("membershipPay").style.display = "none";
-
-servicesData.forEach(s => {
+rates[status].forEach(s => {
   const div = document.createElement("div");
   div.className = "service";
-  div.innerHTML = `
-    <strong>${s.name}</strong>
-    <div class="price">₱${isMember ? s.member : s.non}</div>
-  `;
-  div.onclick = () => selectService(div);
+  div.innerHTML = `<h4>${s.name}</h4><div class="price">₱${s.price}</div>`;
+  div.onclick = () => {
+    document.querySelectorAll(".service").forEach(x => x.classList.remove("selected"));
+    div.classList.add("selected");
+    uploadBox.style.display = "block";
+  };
   servicesEl.appendChild(div);
 });
 
-function selectService(el) {
-  if (selected) return;
+document.getElementById("serviceProof").addEventListener("change", () => {
+  loginBtn.disabled = false;
+  loginBtn.classList.remove("disabled");
+});
 
-  selected = el;
-  el.classList.add("selected");
-
-  document.querySelectorAll(".service").forEach(s => {
-    if (s !== el) s.classList.add("disabled");
-  });
-
-  document.getElementById("paymentCard").style.display = "block";
-
-  // simulate upload success later
-  setTimeout(() => {
-    document.getElementById("loginBtn").disabled = false;
-  }, 3000);
+function toggleMembershipUpload() {
+  const box = document.getElementById("membershipUpload");
+  box.style.display = box.style.display === "block" ? "none" : "block";
 }
-
-document.getElementById("loginBtn").onclick = () => {
-  alert("Training login recorded");
-};
 </script>
 
 </body>
