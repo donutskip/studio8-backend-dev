@@ -175,14 +175,14 @@ const rates = {
     {id:"360_day",name:"360 – 1 Day Pass",price:300},
     {id:"bjj_month",name:"BJJ – Monthly",price:3000},
     {id:"360_month",name:"360 – Monthly",price:2200},
-    {id:"combo",name:"BJJ + 360 – Monthly",price:4500}
+    {id:"combo_month",name:"BJJ + 360 – Monthly",price:4500}
   ],
   NON_MEMBER: [
     {id:"bjj_day",name:"BJJ – 1 Day Pass",price:450},
     {id:"360_day",name:"360 – 1 Day Pass",price:350},
     {id:"bjj_month",name:"BJJ – Monthly",price:3300},
     {id:"360_month",name:"360 – Monthly",price:2500},
-    {id:"combo",name:"BJJ + 360 – Monthly",price:5000}
+    {id:"combo_month",name:"BJJ + 360 – Monthly",price:5000}
   ]
 };
 
@@ -253,6 +253,36 @@ btn.onclick = async () => {
   btn.textContent = "Logged In";
 };
 </script>
+
+<script>
+const membershipInput = document.getElementById("membershipFile");
+
+membershipInput?.addEventListener("change", uploadMembershipProof);
+
+async function uploadMembershipProof() {
+  if (!membershipInput.files.length) return;
+
+  const form = new FormData();
+  form.append("proof", membershipInput.files[0]);
+
+  try {
+    const res = await fetch("https://api.donutskip.com/membership/upload", {
+      method: "POST",
+      credentials: "include",
+      body: form
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Upload failed");
+
+    alert("Annual membership payment uploaded successfully");
+    membershipInput.disabled = true;
+  } catch (err) {
+    alert(err.message);
+  }
+}
+</script>
+
 
 </body>
 </html>

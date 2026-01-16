@@ -188,18 +188,23 @@ def training_login():
     proof.save(file_path)
 
     # ✅ CORRECT columns
+    logged_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     cur.execute("""
-        INSERT INTO training_logins (
-            client_id,
-            service_id,
-            proof_filename
-        )
-        VALUES (?, ?, ?)
-    """, (
+    INSERT INTO training_logins (
         client_id,
         service_id,
-        filename
+        proof_filename,
+        logged_at
+    )
+    VALUES (?, ?, ?, ?)
+    """, (
+    client_id,
+    service_id,
+    filename,
+    logged_at
     ))
+
 
     conn.commit()
     conn.close()
@@ -208,6 +213,66 @@ def training_login():
         "success": True,
         "message": "Training login recorded"
     })
+
+
+#--------------------
+# Membership Payments Upload
+#--------------------
+@app.route("/membership/upload", methods=["POST"])
+def upload_membership_payment():
+    client_id = session.get("client_id")
+    if not client_id:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    proof = request.files.get("proof")
+    if not proof or proof.filename == "":
+        return jsonify({"success": False, "error": "Proof required"}), 400
+
+    if not allowed_file(proof.filename):
+        return jsonify({"success": False, "error": "Invalid file type"}), 400
+
+    # Get client info for filename
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT client_code, full_name FROM clients WHERE id = ?", (client_id,))
+    client = cur.fetchone()
+
+    if not client:
+        conn.close()
+        return jsonify({"success": False, "error": "Client not found"}), 400
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_name = secure_filename(client["full_name"].replace(" ", "_"))
+
+    filename = (
+        f"annual_{client['client_code']}_"
+        f"{safe_name}_{timestamp}."
+        f"{proof.filename.rsplit('.',1)[1]}"
+    )
+
+    proof.save(os.path.join(UPLOAD_DIR, filename))
+
+    cur.execute("""
+        INSERT INTO membership_payments (
+            client_id,
+            proof_filename,
+            logged_at
+        )
+        VALUES (?, ?, ?)
+    """, (
+        client_id,
+        filename,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": "Membership payment uploaded"
+    })
+
 
 # -------------------
 # Logout
