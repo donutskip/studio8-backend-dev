@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Studio8 Registration</title>
+<title>Studio8 Registration Page</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -66,7 +66,6 @@
   border:none;
   font-size:15px;
 
-  /* FORCE VISIBILITY */
   background-color:#ffffff !important;
   color:#000000 !important;
 }
@@ -118,6 +117,7 @@
 .studio8-register button:disabled {
   background:var(--muted);
   cursor:not-allowed;
+  opacity:0.6;
 }
 </style>
 </head>
@@ -128,7 +128,7 @@
   <div class="container">
     <div class="card">
 
-      <h2>Studio8 Registration</h2>
+      <h2>Please accomplish all fields below</h2>
 
       <label for="client_code">Client Code / Username</label>
       <input id="client_code" placeholder="Create a unique username using a name and two numbers (e.g., Juan23)">
@@ -156,9 +156,9 @@
 
       <div class="checkbox">
         <input type="checkbox" id="consent_health">
-        <label for="consent_health">I agree to the Injury & Health Waiver: <br><br>
-
-STUDIO8 MARTIAL ARTS AND FITNESS ASSUMPTION OF RISK, CONSENT, AND WAIVER <br><br>
+        <label for="consent_health">I agree to the Injury & Health Waiver below: <br><br>
+        <!-- waiver text unchanged -->
+        STUDIO8 MARTIAL ARTS AND FITNESS ASSUMPTION OF RISK, CONSENT, AND WAIVER <br><br>
 
 I acknowledge and understand that participation in martial arts, combat sports, fitness training, conditioning sessions, open mat activities, and the use of Studio8 Martial Arts and Fitness facilities and equipment necessarily involve physical exertion and inherent risks, including but not limited to falls, physical contact, strains, sprains, dislocations, fractures, and other bodily injuries. <br><br>
 
@@ -172,17 +172,19 @@ I agree to comply with all rules, instructions, safety policies, and directions 
 
 For participants who are minors, I certify that I am the parent or legal guardian of the minor participant, and I expressly give my consent to the minor’s participation and agree to be bound by this undertaking on the minor’s behalf.<br><br>
 
-By checking this box, I confirm that I have read and understood this Assumption of Risk, Consent, and Waiver, and that my electronic acknowledgment constitutes a valid and binding consent under Philippine law.</label>
+By checking this box, I confirm that I have read and understood this Assumption of Risk, Consent, and Waiver, and that my electronic acknowledgment constitutes a valid and binding consent under Philippine law.
+
+        </label>
       </div>
 
       <div class="checkbox">
         <input type="checkbox" id="consent_privacy">
-        <label for="consent_privacy">I agree to the Data Privacy & Security Notice:<br><br>
-I acknowledge that Studio8 collects and processes personal information submitted through this registration form in accordance with applicable data privacy laws. Information is used strictly for membership registration, safety, and internal operational purposes. Reasonable administrative, technical, and physical safeguards are implemented to protect personal data; however, no online system can be guaranteed to be completely secure.
+        <label for="consent_privacy">I agree that Studio8 collects and processes personal information submitted through this registration form in accordance with applicable data privacy laws. Information is used strictly for membership registration, safety, and internal operational purposes. Reasonable administrative, technical, and physical safeguards are implemented to protect personal data; however, no online system can be guaranteed to be completely secure.
 </label>
       </div>
 
-      <button id="submitBtn">Submit Registration</button>
+      <!-- 🔒 Disabled by default -->
+      <button id="submitBtn" disabled>Submit Registration</button>
 
     </div>
   </div>
@@ -191,7 +193,23 @@ I acknowledge that Studio8 collects and processes personal information submitted
 <script>
 const API = "https://api.donutskip.com";
 
-document.getElementById("submitBtn").onclick = async () => {
+const submitBtn = document.getElementById("submitBtn");
+const consentHealth = document.getElementById("consent_health");
+const consentPrivacy = document.getElementById("consent_privacy");
+
+/* ✅ Enable submit ONLY when both consents are checked */
+function updateSubmitState() {
+  submitBtn.disabled = !(consentHealth.checked && consentPrivacy.checked);
+}
+
+consentHealth.addEventListener("change", updateSubmitState);
+consentPrivacy.addEventListener("change", updateSubmitState);
+updateSubmitState();
+
+/* =========================
+   SUBMIT HANDLER (UNCHANGED)
+   ========================= */
+submitBtn.addEventListener("click", async () => {
   const payload = {
     client_code: document.getElementById("client_code").value.trim(),
     pin: document.getElementById("pin").value.trim(),
@@ -201,14 +219,14 @@ document.getElementById("submitBtn").onclick = async () => {
     emergency_name: document.getElementById("emergency_name").value.trim(),
     emergency_phone: document.getElementById("emergency_phone").value.trim(),
     medical_notes: document.getElementById("medical_notes").value.trim(),
-    consent_health: document.getElementById("consent_health").checked,
-    consent_privacy: document.getElementById("consent_privacy").checked
+    consent_health: consentHealth.checked,
+    consent_privacy: consentPrivacy.checked
   };
 
   if (
     !payload.client_code ||
-    payload.pin.length !== 4 ||
     !payload.full_name ||
+    payload.pin.length !== 4 ||
     !payload.consent_health ||
     !payload.consent_privacy
   ) {
@@ -217,21 +235,37 @@ document.getElementById("submitBtn").onclick = async () => {
   }
 
   try {
-    const res = await fetch(`${API}/register`, {
+    const res = await fetch("https://api.donutskip.com/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(payload)
     });
 
+    const contentType = res.headers.get("content-type") || "";
+
+    if (!contentType.includes("application/json")) {
+      const text = await res.text();
+      console.error("NON-JSON RESPONSE:", text);
+      alert("Registration failed. Server returned an unexpected response.");
+      return;
+    }
+
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Registration failed");
+
+    if (!res.ok) {
+      alert(data.error || "Registration failed.");
+      return;
+    }
 
     alert("Registration successful! You may now log in.");
     window.location.href = "/login";
+
   } catch (err) {
-    alert(err.message);
+    console.error("FETCH ERROR:", err);
+    alert("Network or server error. Please try again.");
   }
-};
+});
 </script>
 
 </body>

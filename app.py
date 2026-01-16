@@ -10,6 +10,9 @@ import time
 from flask import send_from_directory, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory
+from flask import make_response
+import secrets
+
 
 
 # -------------------
@@ -21,7 +24,7 @@ app.secret_key = "change-this-secret-in-prod"
 # Required for WP ↔ Flask cookies
 app.config.update(
     SESSION_COOKIE_SAMESITE="None",
-    SESSION_COOKIE_SECURE=False,
+    SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True
 )
 
@@ -268,6 +271,7 @@ def login():
     conn.commit()
     conn.close()
 
+
     return jsonify({
         "valid": True,
         "full_name": client["full_name"],
@@ -279,6 +283,7 @@ def login():
 # -------------------
 @app.route("/me", methods=["GET"])
 def me():
+    token = request.headers.get("X-Auth-Token")
     client_id = session.get("client_id")
     if not client_id:
         return jsonify({"error": "Not authenticated"}), 401
@@ -310,7 +315,10 @@ def me():
 def training_login():
     client_id = session.get("client_id")
     if not client_id:
-        return jsonify({"success": False, "error": "Not authenticated"}), 401
+    	return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    if not client_id:
+    	return jsonify({"success": False, "error": "Not authenticated"}), 401
 
     service_id = request.form.get("service_id")
     proof = request.files.get("proof")
@@ -379,8 +387,10 @@ def training_login():
 def upload_membership_payment():
     client_id = session.get("client_id")
     if not client_id:
-        return jsonify({"success": False, "error": "Not authenticated"}), 401
+    	return jsonify({"success": False, "error": "Not authenticated"}), 401
 
+    if not client_id:
+    	return jsonify({"success": False, "error": "Not authenticated"}), 401
     proof = request.files.get("proof")
     if not proof or proof.filename == "":
         return jsonify({"success": False, "error": "Proof required"}), 400
@@ -443,4 +453,4 @@ def logout():
 # Run
 # -------------------
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5001, debug=True)
+    app.run(host="127.0.0.1", port=5001, debug=False)

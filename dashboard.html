@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Studio8 Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
 :root {
   --navy:#102f44;
@@ -111,6 +110,7 @@ button.disabled { background:var(--muted); cursor:not-allowed; }
 <body>
 
 <script>
+const API = "https://api.donutskip.com";
 /* HARD SESSION GUARD */
 const raw = sessionStorage.getItem("studio8_user");
 if (!raw) {
@@ -217,40 +217,43 @@ function toggleMembership() {
 
 btn.onclick = async () => {
   if (!selectedService) return alert("Select a service");
+
   const f = document.getElementById("sessionFile").files[0];
   if (!f) return alert("Upload session proof");
 
   btn.textContent = "Submitting...";
   btn.disabled = true;
 
-  const form = new FormData();
-  form.append("service_id", selectedService);
-  form.append("proof", f);
+  const formData = new FormData();
+  formData.append("service_id", selectedService);
+  formData.append("proof", f);
 
-  const res = await fetch("https://api.donutskip.com/training/login", {
-    method:"POST",
-    credentials:"include",
-    body:form
-  });
+  try {
+    const res = await fetch(`${API}/training/login`, {
+      method: "POST",
+      credentials: "include",
+      body: formData
+    });
 
-  const ct = res.headers.get("content-type") || "";
-  if (!ct.includes("application/json")) {
-    alert("Server error. Please contact staff.");
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+      throw new Error("Invalid server response");
+    }
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Submission failed");
+    }
+
+    alert("Training login recorded. Welcome!");
+    btn.textContent = "Logged In";
+
+  } catch (err) {
+    alert(err.message);
     btn.textContent = "Login to Training";
     btn.disabled = false;
-    return;
   }
-
-  const data = await res.json();
-  if (!res.ok) {
-    alert(data.error || "Failed");
-    btn.textContent = "Login to Training";
-    btn.disabled = false;
-    return;
-  }
-
-  alert("Training login recorded. Welcome!");
-  btn.textContent = "Logged In";
 };
 </script>
 
@@ -267,10 +270,10 @@ async function uploadMembershipProof() {
 
   try {
     const res = await fetch("https://api.donutskip.com/membership/upload", {
-      method: "POST",
-      credentials: "include",
-      body: form
-    });
+  method: "POST",
+  credentials: "include",
+  body: form
+});
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Upload failed");

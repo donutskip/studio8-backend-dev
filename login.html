@@ -104,95 +104,79 @@
   </div>
 
   <script>
-    const API = "https://api.donutskip.com";
+const API = "https://api.donutskip.com";
 
-    /* ---------------------------
-       Load client codes
-    --------------------------- */
-    async function loadClients() {
-      const select = document.getElementById("client_code");
+async function loadClients() {
+  const select = document.getElementById("client_code");
 
-      try {
-        const res = await fetch(`${API}/clients`, {
-          credentials: "include" // safe + consistent
-        });
+  try {
+    const res = await fetch(`${API}/clients`, {
+      credentials: "include"
+    });
 
-        if (!res.ok) throw new Error("Failed to fetch clients");
+    const clients = await res.json();
 
-        const clients = await res.json();
-        select.innerHTML = '<option value="">Select client</option>';
+    select.innerHTML = '<option value="">Select client</option>';
+    clients.forEach(code => {
+      const opt = document.createElement("option");
+      opt.value = code;
+      opt.textContent = code;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    select.innerHTML =
+      '<option value="">Unable to load clients</option>';
+  }
+}
 
-        clients.forEach(code => {
-          const opt = document.createElement("option");
-          opt.value = code;
-          opt.textContent = code;
-          select.appendChild(opt);
-        });
+async function login() {
+  const client_code = document.getElementById("client_code").value;
+  const pin = document.getElementById("pin").value;
+  const message = document.getElementById("message");
 
-      } catch (err) {
-        console.error(err);
-        select.innerHTML =
-          '<option value="">Unable to load clients</option>';
-      }
+  message.className = "hidden";
+  message.textContent = "";
+
+  if (!client_code || !pin) {
+    message.textContent = "Please select a client and enter your PIN";
+    message.className = "error";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/login`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_code, pin })
+    });
+
+    const data = await res.json();
+
+    if (!data.valid) {
+      message.textContent = "Invalid client or PIN";
+      message.className = "error";
+      return;
     }
 
-    /* ---------------------------
-       Login handler
-    --------------------------- */
-    async function login() {
-      const client_code = document.getElementById("client_code").value;
-      const pin = document.getElementById("pin").value;
-      const message = document.getElementById("message");
+    sessionStorage.setItem(
+      "studio8_user",
+      JSON.stringify({
+        full_name: data.full_name,
+        status: data.status
+      })
+    );
 
-      message.className = "hidden";
-      message.textContent = "";
+    window.location.href = "/dashboard/";
+  } catch (err) {
+    message.textContent = "Unable to reach server";
+    message.className = "error";
+  }
+}
 
-      if (!client_code || !pin) {
-        message.textContent = "Please select a client and enter your PIN";
-        message.className = "error";
-        return;
-      }
+document.addEventListener("DOMContentLoaded", loadClients);
+</script>
 
-      try {
-        const res = await fetch(`${API}/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include", // 🔑 CRITICAL FIX
-          body: JSON.stringify({ client_code, pin })
-        });
-
-        const data = await res.json();
-
-        if (!data.valid) {
-          message.textContent = "Invalid client or PIN";
-          message.className = "error";
-          return;
-        }
-
-        /* ✅ STORE EXACT KEY DASHBOARD EXPECTS */
-        sessionStorage.setItem(
-          "studio8_user",
-          JSON.stringify({
-            full_name: data.full_name,
-            status: data.status
-          })
-        );
-
-        message.textContent = "Login successful";
-        message.className = "success";
-
-        /* ✅ HARD REDIRECT */
-        window.location.href = "/dashboard/";
-
-      } catch (err) {
-        console.error(err);
-        message.textContent = "Unable to reach server";
-        message.className = "error";
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", loadClients);
-  </script>
 
 </body>
 </html>
