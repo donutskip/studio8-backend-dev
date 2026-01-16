@@ -66,21 +66,64 @@ def health():
 # -------------------
 @app.route("/register", methods=["POST"])
 def register():
-    print("RAW PAYLOAD:")
-    print(json.dumps(request.json, indent=2))
-    data = request.json
+    try:
+        data = request.get_json(force=True)
 
-    if not data:
-        return jsonify({"error": "Invalid payload"}), 400
+        required = [
+            "client_code", "pin", "full_name",
+            "consent_health", "consent_privacy"
+        ]
 
-    # TEMP: log payload for verification
-    print("FORMINATOR PAYLOAD:", data)
+        for field in required:
+            if field not in data or not data[field]:
+                return jsonify({"error": f"Missing field: {field}"}), 400
 
-    return jsonify({
-        "success": True,
-        "message": "Webhook received"
-    }), 200
+        conn = get_db()
+        cur = conn.cursor()
 
+        cur.execute("""
+            INSERT INTO clients (
+                client_code,
+                pin_hash,
+                full_name,
+                email,
+                phone,
+                emergency_name,
+                emergency_phone,
+                medical_notes,
+                consent_health,
+                consent_privacy,
+	        status,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            data["client_code"],
+            data["pin"],
+            data["full_name"],
+            data.get("email"),
+            data.get("phone"),
+            data.get("emergency_name"),
+            data.get("emergency_phone"),
+            data.get("medical_notes"),
+            int(data["consent_health"]),
+            int(data["consent_privacy"]),
+	    "NON_MEMBER",
+            datetime.utcnow().isoformat()
+        ))
+
+        conn.commit()
+        conn.close()
+
+        # ✅ THIS IS THE MOST IMPORTANT LINE
+        return jsonify({"success": True}), 201
+
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Client code already exists"}), 409
+
+    except Exception as e:
+        print("REGISTER ERROR:", e)
+        return jsonify({"error": "Internal server error"}), 500
 
 # -------------------
 # Client dropdown
