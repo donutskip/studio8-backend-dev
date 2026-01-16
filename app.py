@@ -1,3 +1,4 @@
+
 import os
 import sqlite3
 from datetime import datetime
@@ -5,6 +6,11 @@ from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import json
+import time
+from flask import send_from_directory, abort
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import send_from_directory
+
 
 # -------------------
 # App setup
@@ -15,7 +21,7 @@ app.secret_key = "change-this-secret-in-prod"
 # Required for WP ↔ Flask cookies
 app.config.update(
     SESSION_COOKIE_SAMESITE="None",
-    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SECURE=False,
     SESSION_COOKIE_HTTPONLY=True
 )
 
@@ -50,6 +56,9 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+def is_admin():
+    return session.get("is_admin") is True
+
 # -------------------
 # Health check
 # -------------------
@@ -60,6 +69,89 @@ def health():
         "service": "studio8-backend",
         "time": datetime.utcnow().isoformat()
     })
+
+# Admin Login Page
+@app.route("/admin/login-page", methods=["GET"])
+def admin_login_page():
+    return send_from_directory("admin_ui", "login.html")
+
+@app.route("/admin")
+def admin_dashboard_page():
+    if not session.get("is_admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    return send_from_directory("admin_ui", "dashboard.html")
+
+# Admin login API
+@app.route("/admin/login", methods=["POST"])
+def admin_login():
+    data = request.get_json(force=True)
+    username = data.get("username")
+    password = data.get("password")
+
+    if not username or not password:
+        return jsonify({"error": "Missing credentials"}), 400
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, password_hash, failed_attempts, locked_until
+        FROM admins
+        WHERE username = ?
+    """, (username,))
+    admin = cur.fetchone()
+
+    if not admin:
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    if admin["locked_until"]:
+        locked_until = datetime.fromisoformat(admin["locked_until"])
+        if datetime.utcnow() < locked_until:
+            return jsonify({"error": "Account locked"}), 403
+
+    if not check_password_hash(admin["password_hash"], password):
+        cur.execute("""
+            UPDATE admins
+            SET failed_attempts = failed_attempts + 1
+            WHERE id = ?
+        """, (admin["id"],))
+        conn.commit()
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    # success
+    cur.execute("""
+        UPDATE admins
+        SET failed_attempts = 0, locked_until = NULL
+        WHERE id = ?
+    """, (admin["id"],))
+    conn.commit()
+    conn.close()
+
+    session.clear()
+    session["is_admin"] = True
+    session["admin_id"] = admin["id"]
+
+    return jsonify({"success": True})
+
+# Admin logout
+@app.route("/admin/logout", methods=["POST"])
+def admin_logout():
+    session.clear()
+    return jsonify({"success": True})
+
+
+# Admin Session Checkpoint
+@app.route("/admin/me", methods=["GET"])
+def admin_me():
+    if not session.get("is_admin"):
+        return jsonify({"authenticated": False}), 401
+
+    return jsonify({
+        "authenticated": True,
+        "admin_id": session.get("admin_id")
+    })
+
 
 # -------------------
 # Registration
@@ -351,4 +443,4 @@ def logout():
 # Run
 # -------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    app.run(host="127.0.0.1", port=5001, debug=True)
