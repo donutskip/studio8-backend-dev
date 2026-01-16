@@ -11,13 +11,13 @@
   --navy-soft: #143c55;
   --gold: #f4c26b;
   --white: #ffffff;
+  --muted: #9aa7b1;
 }
 
 body {
   margin: 0;
   background: #f6f8fa;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #0f172a;
 }
 
 .container {
@@ -32,6 +32,11 @@ body {
   padding: 28px;
   margin-bottom: 28px;
   color: var(--white);
+}
+
+/* Force readable text */
+.card, .card * {
+  color: #ffffff;
 }
 
 .welcome h2 {
@@ -62,10 +67,12 @@ body {
   padding: 20px;
   cursor: pointer;
   border: 2px solid transparent;
+  transition: 0.15s ease;
 }
 
 .service.selected {
   border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(244,194,107,.25);
 }
 
 .service h4 { margin: 0 0 8px; }
@@ -92,10 +99,20 @@ button {
   cursor: pointer;
 }
 
-button.primary { background: var(--gold); color: #000; }
-button.disabled { background: #9aa7b1; cursor: not-allowed; }
+button.primary {
+  background: #0b6fd3;
+  color: #ffffff;
+}
 
-.membership-box { margin-top: 18px; }
+button.disabled {
+  background: var(--muted);
+  cursor: not-allowed;
+}
+
+.membership-box {
+  margin-top: 18px;
+}
+
 .membership-box button {
   background: transparent;
   color: var(--gold);
@@ -110,64 +127,17 @@ button.disabled { background: #9aa7b1; cursor: not-allowed; }
   border-radius: 12px;
   text-align: center;
 }
-
-/* ================================
-   FIX TEXT CONTRAST ON DARK CARDS
-================================ */
-
-/* Force all text inside cards to be readable */
-.card,
-.card * {
-  color: #ffffff;
-}
-
-/* Service titles */
-.service h4 {
-  color: #ffffff !important;
-}
-
-/* Section headers inside cards */
-.card h3,
-.card h2 {
-  color: #ffffff !important;
-}
-
-/* Prices already gold, keep them */
-.service .price {
-  color: #f4c26b !important;
-}
-
-/* Disabled button text */
-button.disabled {
-  color: #ffffff !important;
-}
-
-/* Login to Training button */
-#loginBtn {
-  color: #ffffff;
-}
-
-/* Membership CTA */
-.membership-box button {
-  color: #f4c26b !important;
-}
-
-/* Upload box text */
-.upload-box,
-.membership-upload {
-  color: #ffffff;
-}
 </style>
 </head>
 
 <body>
 
 <script>
-/* -----------------------------------
-   HARD GUARD — PREVENT WORDPRESS LOOP
------------------------------------- */
-const userRaw = sessionStorage.getItem("studio8_user");
-if (!userRaw) {
+/* ===============================
+   HARD SESSION GUARD (NO LOOP)
+================================ */
+const sessionRaw = sessionStorage.getItem("studio8_user");
+if (!sessionRaw) {
   document.body.innerHTML = `
     <div style="padding:60px;font-family:sans-serif">
       <h2>Session expired</h2>
@@ -204,7 +174,7 @@ if (!userRaw) {
 
     <div class="membership-box">
       <button onclick="toggleMembershipUpload()">
-        Pay Annual Membership (₱600 / year)
+        Pay Annual Membership (₱600 / year) — Optional
       </button>
 
       <div class="membership-upload" id="membershipUpload">
@@ -217,8 +187,10 @@ if (!userRaw) {
 </div>
 
 <script>
-/* --- Load user --- */
-const user = JSON.parse(userRaw);
+/* ===============================
+   USER CONTEXT
+================================ */
+const user = JSON.parse(sessionRaw);
 const firstName = user.full_name.split(" ")[0];
 const status = user.status || "NON_MEMBER";
 
@@ -228,7 +200,16 @@ const badge = document.getElementById("statusBadge");
 badge.textContent = status === "MEMBER" ? "Member" : "Non-Member";
 badge.classList.add(status === "MEMBER" ? "member" : "non-member");
 
-/* --- Rates --- */
+if (status === "MEMBER") {
+  const membershipBox = document.querySelector(".membership-box");
+  if (membershipBox) {
+    membershipBox.style.display = "none";
+  }
+}
+
+/* ===============================
+   SERVICES
+================================ */
 const rates = {
   MEMBER: [
     { id: "bjj_day", name: "BJJ – 1 Day Pass", price: 400 },
@@ -250,6 +231,8 @@ const servicesEl = document.getElementById("services");
 const uploadBox = document.getElementById("serviceUpload");
 const loginBtn = document.getElementById("loginBtn");
 
+let selectedService = null;
+
 rates[status].forEach(s => {
   const div = document.createElement("div");
   div.className = "service";
@@ -257,6 +240,7 @@ rates[status].forEach(s => {
   div.onclick = () => {
     document.querySelectorAll(".service").forEach(x => x.classList.remove("selected"));
     div.classList.add("selected");
+    selectedService = s.id;
     uploadBox.style.display = "block";
   };
   servicesEl.appendChild(div);
@@ -265,11 +249,55 @@ rates[status].forEach(s => {
 document.getElementById("serviceProof").addEventListener("change", () => {
   loginBtn.disabled = false;
   loginBtn.classList.remove("disabled");
+  loginBtn.classList.add("primary");
 });
 
 function toggleMembershipUpload() {
   const box = document.getElementById("membershipUpload");
   box.style.display = box.style.display === "block" ? "none" : "block";
+}
+
+/* ===============================
+   TRAINING LOGIN SUBMIT
+================================ */
+loginBtn.addEventListener("click", submitTrainingLogin);
+
+async function submitTrainingLogin() {
+  if (!selectedService) {
+    alert("Please select a service");
+    return;
+  }
+
+  const fileInput = document.getElementById("serviceProof");
+  if (!fileInput.files.length) {
+    alert("Please upload proof of payment");
+    return;
+  }
+
+  loginBtn.textContent = "Submitting...";
+  loginBtn.disabled = true;
+
+  const form = new FormData();
+  form.append("service_id", selectedService);
+  form.append("proof", fileInput.files[0]);
+
+  try {
+    const res = await fetch("https://api.donutskip.com/training/login", {
+      method: "POST",
+      credentials: "include",
+      body: form
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Server error");
+
+    alert("Training login recorded. Welcome!");
+    loginBtn.textContent = "Logged In";
+  } catch (err) {
+    alert(err.message);
+    loginBtn.textContent = "Login to Training";
+    loginBtn.disabled = false;
+  }
 }
 </script>
 
