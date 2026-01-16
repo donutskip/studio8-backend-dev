@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+import json
 
 # -------------------
 # App setup
@@ -65,6 +66,8 @@ def health():
 # -------------------
 @app.route("/register", methods=["POST"])
 def register():
+    print("RAW PAYLOAD:")
+    print(json.dumps(request.json, indent=2))
     data = request.json
 
     if not data:

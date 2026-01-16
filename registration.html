@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Studio8 Registration</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+/* =========================
+   STUDIO8 REGISTRATION SCOPE
+   ========================= */
+
+.studio8-register {
+  --navy:#102f44;
+  --navy-soft:#143c55;
+  --gold:#f4c26b;
+  --muted:#9aa7b1;
+  --white:#ffffff;
+
+  background:#f6f8fa;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  padding:40px 0;
+}
+
+/* Container */
+.studio8-register .container {
+  max-width:720px;
+  margin:0 auto;
+  padding:0 20px;
+}
+
+/* Card */
+.studio8-register .card {
+  background:var(--navy);
+  border-radius:14px;
+  padding:28px;
+}
+
+/* Default text inside card */
+.studio8-register .card * {
+  color:#ffffff;
+}
+
+/* Headings */
+.studio8-register h2 {
+  margin-top:0;
+  margin-bottom:20px;
+}
+
+/* Labels */
+.studio8-register label {
+  display:block;
+  margin-top:16px;
+  font-weight:600;
+}
+
+/* =========================
+   INPUT FIX (WORDPRESS SAFE)
+   ========================= */
+.studio8-register input,
+.studio8-register textarea {
+  width:100%;
+  margin-top:6px;
+  padding:12px;
+  border-radius:8px;
+  border:none;
+  font-size:15px;
+
+  /* FORCE VISIBILITY */
+  background-color:#ffffff !important;
+  color:#000000 !important;
+}
+
+/* Placeholder */
+.studio8-register input::placeholder,
+.studio8-register textarea::placeholder {
+  color:#6b7280 !important;
+}
+
+/* Textarea */
+.studio8-register textarea {
+  resize:vertical;
+  min-height:90px;
+}
+
+/* Checkbox layout */
+.studio8-register .checkbox {
+  margin-top:18px;
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+
+.studio8-register .checkbox input {
+  width:auto;
+  margin-top:4px;
+}
+
+.studio8-register .checkbox label {
+  margin:0;
+  font-weight:500;
+}
+
+/* Button */
+.studio8-register button {
+  width:100%;
+  margin-top:26px;
+  padding:16px;
+  border-radius:12px;
+  border:none;
+  background:var(--gold);
+  color:#000000 !important;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.studio8-register button:disabled {
+  background:var(--muted);
+  cursor:not-allowed;
+}
+</style>
+</head>
+
+<body>
+
+<div class="studio8-register">
+  <div class="container">
+    <div class="card">
+
+      <h2>Studio8 Registration</h2>
+
+      <label for="client_code">Client Code / Username</label>
+      <input id="client_code" placeholder="Create a unique username using a name and two numbers (e.g., Juan23)">
+
+      <label for="pin">Enter preferred 4-digit PIN</label>
+      <input id="pin" type="password" maxlength="4" inputmode="numeric" placeholder="••••">
+
+      <label for="full_name">Your Full Name</label>
+      <input id="full_name" placeholder="Juan Dela Cruz">
+
+      <label for="email">Email Address</label>
+      <input id="email" type="email" placeholder="you@email.com">
+
+      <label for="phone">Phone</label>
+      <input id="phone" placeholder="09xxxxxxxxx">
+
+      <label for="emergency_name">Emergency Contact Full Name</label>
+      <input id="emergency_name">
+
+      <label for="emergency_phone">Emergency Contact Mobile Number</label>
+      <input id="emergency_phone">
+
+      <label for="medical_notes">Injury / Medical Notes</label>
+      <textarea id="medical_notes" placeholder="Optional, Please declare any existing injuries or medical conditions. Type “None” if not applicable. Injuries related to undeclared conditions may not be our responsibility."></textarea>
+
+      <div class="checkbox">
+        <input type="checkbox" id="consent_health">
+        <label for="consent_health">I agree to the Injury & Health Waiver: <br><br>
+
+STUDIO8 MARTIAL ARTS AND FITNESS ASSUMPTION OF RISK, CONSENT, AND WAIVER <br><br>
+
+I acknowledge and understand that participation in martial arts, combat sports, fitness training, conditioning sessions, open mat activities, and the use of Studio8 Martial Arts and Fitness facilities and equipment necessarily involve physical exertion and inherent risks, including but not limited to falls, physical contact, strains, sprains, dislocations, fractures, and other bodily injuries. <br><br>
+
+I voluntarily choose to participate in these activities (or allow my child/ward to participate) with full knowledge of such risks, and I expressly assume all risks incidental to or arising from such participation, whether foreseeable or unforeseeable, in accordance with law.<br><br>
+
+To the extent permitted under Philippine law, I hereby waive and release Studio8 Martial Arts and Fitness, its owners, directors, officers, coaches, instructors, staff, agents, and representatives from liability for injuries, losses, or damages arising from participation in the above activities, provided that such injuries, losses, or damages are not due to gross negligence, bad faith, fraud, or willful misconduct.<br><br>
+
+I understand and expressly consent to physical contact inherent in martial arts and combat sports training. I represent that I (or my child/ward) am physically and medically fit to participate and that all relevant medical conditions or limitations, if any, have been disclosed.<br><br>
+
+I agree to comply with all rules, instructions, safety policies, and directions issued by Studio8 Martial Arts and Fitness and its coaches or staff. I further authorize Studio8 Martial Arts and Fitness to provide or arrange emergency medical assistance when necessary, with all related costs to be borne by me.<br><br>
+
+For participants who are minors, I certify that I am the parent or legal guardian of the minor participant, and I expressly give my consent to the minor’s participation and agree to be bound by this undertaking on the minor’s behalf.<br><br>
+
+By checking this box, I confirm that I have read and understood this Assumption of Risk, Consent, and Waiver, and that my electronic acknowledgment constitutes a valid and binding consent under Philippine law.</label>
+      </div>
+
+      <div class="checkbox">
+        <input type="checkbox" id="consent_privacy">
+        <label for="consent_privacy">I agree to the Data Privacy & Security Notice:<br><br>
+I acknowledge that Studio8 collects and processes personal information submitted through this registration form in accordance with applicable data privacy laws. Information is used strictly for membership registration, safety, and internal operational purposes. Reasonable administrative, technical, and physical safeguards are implemented to protect personal data; however, no online system can be guaranteed to be completely secure.
+</label>
+      </div>
+
+      <button id="submitBtn">Submit Registration</button>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "https://api.donutskip.com";
+
+document.getElementById("submitBtn").onclick = async () => {
+  const payload = {
+    client_code: document.getElementById("client_code").value.trim(),
+    pin: document.getElementById("pin").value.trim(),
+    full_name: document.getElementById("full_name").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    emergency_name: document.getElementById("emergency_name").value.trim(),
+    emergency_phone: document.getElementById("emergency_phone").value.trim(),
+    medical_notes: document.getElementById("medical_notes").value.trim(),
+    consent_health: document.getElementById("consent_health").checked,
+    consent_privacy: document.getElementById("consent_privacy").checked
+  };
+
+  if (
+    !payload.client_code ||
+    payload.pin.length !== 4 ||
+    !payload.full_name ||
+    !payload.consent_health ||
+    !payload.consent_privacy
+  ) {
+    alert("Please complete all required fields and consents.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Registration failed");
+
+    alert("Registration successful! You may now log in.");
+    window.location.href = "/login";
+  } catch (err) {
+    alert(err.message);
+  }
+};
+</script>
+
+</body>
+</html>
