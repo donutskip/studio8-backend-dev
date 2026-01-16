@@ -61,6 +61,25 @@ def health():
     })
 
 # -------------------
+# Registration
+# -------------------
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.json
+
+    if not data:
+        return jsonify({"error": "Invalid payload"}), 400
+
+    # TEMP: log payload for verification
+    print("FORMINATOR PAYLOAD:", data)
+
+    return jsonify({
+        "success": True,
+        "message": "Webhook received"
+    }), 200
+
+
+# -------------------
 # Client dropdown
 # -------------------
 @app.route("/clients", methods=["GET"])
