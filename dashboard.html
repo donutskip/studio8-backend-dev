@@ -7,125 +7,103 @@
 
 <style>
 :root {
-  --navy: #102f44;
-  --navy-soft: #143c55;
-  --gold: #f4c26b;
-  --white: #ffffff;
-  --muted: #9aa7b1;
+  --navy:#102f44;
+  --navy-soft:#143c55;
+  --gold:#f4c26b;
+  --white:#ffffff;
+  --muted:#9aa7b1;
+  --blue:#0b6fd3;
 }
 
 body {
-  margin: 0;
-  background: #f6f8fa;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  margin:0;
+  background:#f6f8fa;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
 }
 
 .container {
-  max-width: 1100px;
-  margin: 40px auto;
-  padding: 0 20px;
+  max-width:1100px;
+  margin:40px auto;
+  padding:0 20px;
 }
 
 .card {
-  background: var(--navy);
-  border-radius: 14px;
-  padding: 28px;
-  margin-bottom: 28px;
-  color: var(--white);
+  background:var(--navy);
+  border-radius:14px;
+  padding:28px;
+  margin-bottom:28px;
+  color:#fff;
 }
 
-/* Force readable text */
-.card, .card * {
-  color: #ffffff;
-}
+.card * { color:#fff; }
 
-.welcome h2 {
-  margin: 0 0 10px;
-  font-size: 26px;
-}
+.welcome h2 { margin:0 0 10px; font-size:26px; }
 
 .badge {
-  display: inline-block;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
+  display:inline-block;
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:600;
 }
-
-.badge.member { background: #1e6091; }
-.badge.non-member { background: #8a6d1d; }
+.badge.member { background:#1e6091; }
+.badge.non-member { background:#8a6d1d; }
 
 .services {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;
 }
 
 .service {
-  background: var(--navy-soft);
-  border-radius: 14px;
-  padding: 20px;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: 0.15s ease;
+  background:var(--navy-soft);
+  border-radius:14px;
+  padding:20px;
+  cursor:pointer;
+  border:2px solid transparent;
 }
-
 .service.selected {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 2px rgba(244,194,107,.25);
+  border-color:var(--gold);
+  box-shadow:0 0 0 2px rgba(244,194,107,.25);
 }
 
-.service h4 { margin: 0 0 8px; }
-.price { font-size: 20px; font-weight: 700; color: var(--gold); }
+.price { color:var(--gold); font-size:20px; font-weight:700; }
 
 .upload-box {
-  margin-top: 20px;
-  padding: 20px;
-  border: 2px dashed #355f77;
-  border-radius: 12px;
-  text-align: center;
-  display: none;
+  margin-top:20px;
+  padding:20px;
+  border:2px dashed #355f77;
+  border-radius:12px;
+  text-align:center;
+  display:none;
 }
-
-.actions { margin-top: 20px; }
 
 button {
-  width: 100%;
-  padding: 16px;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
+  width:100%;
+  padding:16px;
+  border-radius:12px;
+  font-size:16px;
+  font-weight:600;
+  border:none;
+  cursor:pointer;
 }
 
-button.primary {
-  background: #0b6fd3;
-  color: #ffffff;
-}
+button.primary { background:var(--blue); }
+button.disabled { background:var(--muted); cursor:not-allowed; }
 
-button.disabled {
-  background: var(--muted);
-  cursor: not-allowed;
-}
-
-.membership-box {
-  margin-top: 18px;
-}
-
+.membership-box { margin-top:18px; }
 .membership-box button {
-  background: transparent;
-  color: var(--gold);
-  border: 2px solid var(--gold);
+  background:transparent;
+  color:var(--gold);
+  border:2px solid var(--gold);
 }
 
 .membership-upload {
-  display: none;
-  margin-top: 14px;
-  border: 2px dashed #355f77;
-  padding: 16px;
-  border-radius: 12px;
-  text-align: center;
+  display:none;
+  margin-top:14px;
+  border:2px dashed #355f77;
+  padding:16px;
+  border-radius:12px;
 }
 </style>
 </head>
@@ -133,13 +111,11 @@ button.disabled {
 <body>
 
 <script>
-/* ===============================
-   HARD SESSION GUARD (NO LOOP)
-================================ */
-const sessionRaw = sessionStorage.getItem("studio8_user");
-if (!sessionRaw) {
+/* HARD SESSION GUARD */
+const raw = sessionStorage.getItem("studio8_user");
+if (!raw) {
   document.body.innerHTML = `
-    <div style="padding:60px;font-family:sans-serif">
+    <div style="padding:60px">
       <h2>Session expired</h2>
       <p>Please log in again.</p>
     </div>`;
@@ -149,37 +125,30 @@ if (!sessionRaw) {
 
 <div class="container">
 
-  <!-- Welcome -->
   <div class="card welcome">
     <h2 id="welcomeText"></h2>
     <span id="statusBadge" class="badge"></span>
   </div>
 
-  <!-- Services -->
   <div class="card">
     <h3>Select Service</h3>
 
     <div class="services" id="services"></div>
 
-    <div class="upload-box" id="serviceUpload">
-      <strong>Upload proof of payment</strong><br><br>
-      <input type="file" id="serviceProof">
+    <div class="upload-box" id="sessionUpload">
+      <strong>Upload proof of session payment</strong><br><br>
+      <input type="file" id="sessionFile">
     </div>
 
-    <div class="actions">
-      <button id="loginBtn" class="disabled" disabled>
-        Login to Training
-      </button>
-    </div>
+    <button id="loginBtn" class="disabled" disabled>
+      Login to Training
+    </button>
 
-    <div class="membership-box">
-      <button onclick="toggleMembershipUpload()">
-        Pay Annual Membership (₱600 / year) — Optional
-      </button>
-
+    <div class="membership-box" id="membershipBox">
+      <button onclick="toggleMembership()">Pay Annual Membership (₱600 / year) — Optional</button>
       <div class="membership-upload" id="membershipUpload">
         <strong>Upload proof of membership payment</strong><br><br>
-        <input type="file">
+        <input type="file" id="membershipFile">
       </div>
     </div>
   </div>
@@ -187,118 +156,102 @@ if (!sessionRaw) {
 </div>
 
 <script>
-/* ===============================
-   USER CONTEXT
-================================ */
-const user = JSON.parse(sessionRaw);
+const user = JSON.parse(raw);
+const status = user.status;
 const firstName = user.full_name.split(" ")[0];
-const status = user.status || "NON_MEMBER";
 
 document.getElementById("welcomeText").textContent = `Welcome, ${firstName}`;
-
 const badge = document.getElementById("statusBadge");
 badge.textContent = status === "MEMBER" ? "Member" : "Non-Member";
 badge.classList.add(status === "MEMBER" ? "member" : "non-member");
 
 if (status === "MEMBER") {
-  const membershipBox = document.querySelector(".membership-box");
-  if (membershipBox) {
-    membershipBox.style.display = "none";
-  }
+  document.getElementById("membershipBox").style.display = "none";
 }
 
-/* ===============================
-   SERVICES
-================================ */
 const rates = {
   MEMBER: [
-    { id: "bjj_day", name: "BJJ – 1 Day Pass", price: 400 },
-    { id: "360_day", name: "360 – 1 Day Pass", price: 300 },
-    { id: "bjj_month", name: "BJJ – Monthly", price: 3000 },
-    { id: "360_month", name: "360 – Monthly", price: 2200 },
-    { id: "combo", name: "BJJ + 360 – Monthly", price: 4500 }
+    {id:"bjj_day",name:"BJJ – 1 Day Pass",price:400},
+    {id:"360_day",name:"360 – 1 Day Pass",price:300},
+    {id:"bjj_month",name:"BJJ – Monthly",price:3000},
+    {id:"360_month",name:"360 – Monthly",price:2200},
+    {id:"combo",name:"BJJ + 360 – Monthly",price:4500}
   ],
   NON_MEMBER: [
-    { id: "bjj_day", name: "BJJ – 1 Day Pass", price: 450 },
-    { id: "360_day", name: "360 – 1 Day Pass", price: 350 },
-    { id: "bjj_month", name: "BJJ – Monthly", price: 3300 },
-    { id: "360_month", name: "360 – Monthly", price: 2500 },
-    { id: "combo", name: "BJJ + 360 – Monthly", price: 5000 }
+    {id:"bjj_day",name:"BJJ – 1 Day Pass",price:450},
+    {id:"360_day",name:"360 – 1 Day Pass",price:350},
+    {id:"bjj_month",name:"BJJ – Monthly",price:3300},
+    {id:"360_month",name:"360 – Monthly",price:2500},
+    {id:"combo",name:"BJJ + 360 – Monthly",price:5000}
   ]
 };
 
-const servicesEl = document.getElementById("services");
-const uploadBox = document.getElementById("serviceUpload");
-const loginBtn = document.getElementById("loginBtn");
-
 let selectedService = null;
+const servicesEl = document.getElementById("services");
+const uploadBox = document.getElementById("sessionUpload");
+const btn = document.getElementById("loginBtn");
 
 rates[status].forEach(s => {
-  const div = document.createElement("div");
-  div.className = "service";
-  div.innerHTML = `<h4>${s.name}</h4><div class="price">₱${s.price}</div>`;
-  div.onclick = () => {
-    document.querySelectorAll(".service").forEach(x => x.classList.remove("selected"));
-    div.classList.add("selected");
+  const d = document.createElement("div");
+  d.className = "service";
+  d.innerHTML = `<h4>${s.name}</h4><div class="price">₱${s.price}</div>`;
+  d.onclick = () => {
+    document.querySelectorAll(".service").forEach(x=>x.classList.remove("selected"));
+    d.classList.add("selected");
     selectedService = s.id;
     uploadBox.style.display = "block";
   };
-  servicesEl.appendChild(div);
+  servicesEl.appendChild(d);
 });
 
-document.getElementById("serviceProof").addEventListener("change", () => {
-  loginBtn.disabled = false;
-  loginBtn.classList.remove("disabled");
-  loginBtn.classList.add("primary");
+document.getElementById("sessionFile").addEventListener("change", () => {
+  btn.disabled = false;
+  btn.classList.remove("disabled");
+  btn.classList.add("primary");
 });
 
-function toggleMembershipUpload() {
-  const box = document.getElementById("membershipUpload");
-  box.style.display = box.style.display === "block" ? "none" : "block";
+function toggleMembership() {
+  const m = document.getElementById("membershipUpload");
+  m.style.display = m.style.display === "block" ? "none" : "block";
 }
 
-/* ===============================
-   TRAINING LOGIN SUBMIT
-================================ */
-loginBtn.addEventListener("click", submitTrainingLogin);
+btn.onclick = async () => {
+  if (!selectedService) return alert("Select a service");
+  const f = document.getElementById("sessionFile").files[0];
+  if (!f) return alert("Upload session proof");
 
-async function submitTrainingLogin() {
-  if (!selectedService) {
-    alert("Please select a service");
-    return;
-  }
-
-  const fileInput = document.getElementById("serviceProof");
-  if (!fileInput.files.length) {
-    alert("Please upload proof of payment");
-    return;
-  }
-
-  loginBtn.textContent = "Submitting...";
-  loginBtn.disabled = true;
+  btn.textContent = "Submitting...";
+  btn.disabled = true;
 
   const form = new FormData();
   form.append("service_id", selectedService);
-  form.append("proof", fileInput.files[0]);
+  form.append("proof", f);
 
-  try {
-    const res = await fetch("https://api.donutskip.com/training/login", {
-      method: "POST",
-      credentials: "include",
-      body: form
-    });
+  const res = await fetch("https://api.donutskip.com/training/login", {
+    method:"POST",
+    credentials:"include",
+    body:form
+  });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Server error");
-
-    alert("Training login recorded. Welcome!");
-    loginBtn.textContent = "Logged In";
-  } catch (err) {
-    alert(err.message);
-    loginBtn.textContent = "Login to Training";
-    loginBtn.disabled = false;
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    alert("Server error. Please contact staff.");
+    btn.textContent = "Login to Training";
+    btn.disabled = false;
+    return;
   }
-}
+
+  const data = await res.json();
+  if (!res.ok) {
+    alert(data.error || "Failed");
+    btn.textContent = "Login to Training";
+    btn.disabled = false;
+    return;
+  }
+
+  alert("Training login recorded. Welcome!");
+  btn.textContent = "Logged In";
+};
 </script>
 
 </body>

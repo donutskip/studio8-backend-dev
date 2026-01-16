@@ -167,45 +167,38 @@ def training_login():
     if not allowed_file(proof.filename):
         return jsonify({"success": False, "error": "Invalid file type"}), 400
 
+    # Get client details for filename
     conn = get_db()
     cur = conn.cursor()
-
-    # Fetch client name (for visibility)
-    cur.execute("SELECT full_name FROM clients WHERE id = ?", (client_id,))
+    cur.execute("SELECT client_code, full_name FROM clients WHERE id = ?", (client_id,))
     client = cur.fetchone()
 
     if not client:
         conn.close()
         return jsonify({"success": False, "error": "Client not found"}), 400
 
-    timestamp = int(datetime.utcnow().timestamp())
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     ext = proof.filename.rsplit(".", 1)[1].lower()
+
     filename = secure_filename(
-        f"client_{client_id}_{service_id}_{timestamp}.{ext}"
+        f"session_{client['client_code']}_{client['full_name'].replace(' ', '_')}_{ts}.{ext}"
     )
 
     file_path = os.path.join(UPLOAD_DIR, filename)
     proof.save(file_path)
 
-    ip_address = request.headers.get("X-Forwarded-For", request.remote_addr)
-
-    # INSERT training login record
+    # ✅ CORRECT columns
     cur.execute("""
         INSERT INTO training_logins (
             client_id,
-            client_name,
             service_id,
-            proof_filename,
-            ip_address,
-            created_at
+            proof_filename
         )
-        VALUES (?, ?, ?, ?, ?, datetime('now','localtime'))
+        VALUES (?, ?, ?)
     """, (
         client_id,
-        client["full_name"],
         service_id,
-        filename,
-        ip_address
+        filename
     ))
 
     conn.commit()
@@ -213,9 +206,7 @@ def training_login():
 
     return jsonify({
         "success": True,
-        "message": "Training login recorded",
-        "client": client["full_name"],
-        "service": service_id
+        "message": "Training login recorded"
     })
 
 # -------------------
