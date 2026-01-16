@@ -1,7 +1,9 @@
+import os
 import sqlite3
 from datetime import datetime
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 
 # -------------------
 # App setup
@@ -9,12 +11,13 @@ from flask_cors import CORS
 app = Flask(__name__)
 app.secret_key = "change-this-secret-in-prod"
 
-# REQUIRED for cross-domain cookies (WordPress → Flask)
+# Required for WP ↔ Flask cookies
 app.config.update(
     SESSION_COOKIE_SAMESITE="None",
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True
 )
+
 CORS(
     app,
     supports_credentials=True,
@@ -24,11 +27,23 @@ CORS(
     ]
 )
 
-DB_PATH = "studio8.db"
+# -------------------
+# Paths / Config
+# -------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "studio8.db")
+
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "pdf"}
 
 # -------------------
-# DB helper
+# Helpers
 # -------------------
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -46,7 +61,7 @@ def health():
     })
 
 # -------------------
-# Client codes (dropdown)
+# Client dropdown
 # -------------------
 @app.route("/clients", methods=["GET"])
 def get_clients():
@@ -69,7 +84,7 @@ def login():
     pin = data.get("pin")
 
     if not client_code or not pin:
-        return jsonify({"valid": False, "error": "Missing credentials"}), 400
+        return jsonify({"valid": False}), 400
 
     conn = get_db()
     cur = conn.cursor()
@@ -83,31 +98,15 @@ def login():
 
     if not client or client["pin_hash"] != pin:
         conn.close()
-        return jsonify({"valid": False, "status": "DENIED"}), 401
+        return jsonify({"valid": False}), 401
 
-    # ---- Persist session ----
     session.clear()
     session["client_id"] = client["id"]
 
-    # ---- Capture metadata ----
-    ip_address = request.headers.get("X-Forwarded-For", request.remote_addr)
-    user_agent = request.headers.get("User-Agent", "unknown")
-
-    # ---- Log login (ALWAYS) ----
     cur.execute("""
-        INSERT INTO sessions (
-            client_id,
-            action,
-            ip_address,
-            user_agent,
-            created_at
-        )
-        VALUES (?, 'LOGIN', ?, ?, datetime('now','localtime'))
-    """, (
-        client["id"],
-        ip_address,
-        user_agent
-    ))
+        INSERT INTO sessions (client_id, action, created_at)
+        VALUES (?, 'LOGIN', datetime('now','localtime'))
+    """, (client["id"],))
 
     conn.commit()
     conn.close()
@@ -115,7 +114,7 @@ def login():
     return jsonify({
         "valid": True,
         "full_name": client["full_name"],
-        "status": client["status"]   # MEMBER / NON_MEMBER
+        "status": client["status"]
     })
 
 # -------------------
@@ -140,11 +139,83 @@ def me():
 
     if not client:
         session.clear()
-        return jsonify({"error": "Session invalid"}), 401
+        return jsonify({"error": "Invalid session"}), 401
 
     return jsonify({
         "full_name": client["full_name"],
         "status": client["status"]
+    })
+
+# -------------------
+# TRAINING LOGIN (FIXED + ENHANCED)
+# -------------------
+@app.route("/training/login", methods=["POST"])
+def training_login():
+    client_id = session.get("client_id")
+    if not client_id:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    service_id = request.form.get("service_id")
+    proof = request.files.get("proof")
+
+    if not service_id:
+        return jsonify({"success": False, "error": "Service not selected"}), 400
+
+    if not proof or proof.filename == "":
+        return jsonify({"success": False, "error": "Proof required"}), 400
+
+    if not allowed_file(proof.filename):
+        return jsonify({"success": False, "error": "Invalid file type"}), 400
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Fetch client name (for visibility)
+    cur.execute("SELECT full_name FROM clients WHERE id = ?", (client_id,))
+    client = cur.fetchone()
+
+    if not client:
+        conn.close()
+        return jsonify({"success": False, "error": "Client not found"}), 400
+
+    timestamp = int(datetime.utcnow().timestamp())
+    ext = proof.filename.rsplit(".", 1)[1].lower()
+    filename = secure_filename(
+        f"client_{client_id}_{service_id}_{timestamp}.{ext}"
+    )
+
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    proof.save(file_path)
+
+    ip_address = request.headers.get("X-Forwarded-For", request.remote_addr)
+
+    # INSERT training login record
+    cur.execute("""
+        INSERT INTO training_logins (
+            client_id,
+            client_name,
+            service_id,
+            proof_filename,
+            ip_address,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, datetime('now','localtime'))
+    """, (
+        client_id,
+        client["full_name"],
+        service_id,
+        filename,
+        ip_address
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": "Training login recorded",
+        "client": client["full_name"],
+        "service": service_id
     })
 
 # -------------------
