@@ -110,7 +110,7 @@ button.disabled { background:var(--muted); cursor:not-allowed; }
 <body>
 
 <script>
-const API = "https://api.donutskip.com";
+const API = "/api";
 /* HARD SESSION GUARD */
 const raw = sessionStorage.getItem("studio8_user");
 if (!raw) {
@@ -269,7 +269,7 @@ async function uploadMembershipProof() {
   form.append("proof", membershipInput.files[0]);
 
   try {
-    const res = await fetch("https://api.donutskip.com/membership/upload", {
+    const res = await fetch("/api/membership/upload", {
   method: "POST",
   credentials: "include",
   body: form

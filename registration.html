@@ -191,7 +191,7 @@ By checking this box, I confirm that I have read and understood this Assumption 
 </div>
 
 <script>
-const API = "https://api.donutskip.com";
+const API = "/api";
 
 const submitBtn = document.getElementById("submitBtn");
 const consentHealth = document.getElementById("consent_health");
@@ -235,7 +235,7 @@ submitBtn.addEventListener("click", async () => {
   }
 
   try {
-    const res = await fetch("https://api.donutskip.com/register", {
+    const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

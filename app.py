@@ -11,8 +11,8 @@ from flask import send_from_directory, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory
 from flask import make_response
+from werkzeug.middleware.proxy_fix import ProxyFix
 import secrets
-
 
 
 # -------------------
@@ -20,12 +20,18 @@ import secrets
 # -------------------
 app = Flask(__name__)
 app.secret_key = "change-this-secret-in-prod"
+app.wsgi_app = ProxyFix(
+    app.wsgi_app,
+    x_proto=1,
+    x_host=1
+)
 
 # Required for WP ↔ Flask cookies
 app.config.update(
-    SESSION_COOKIE_SAMESITE="None",
+    SESSION_COOKIE_NAME="studio8_session",
+    SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_HTTPONLY=True
+    SESSION_COOKIE_HTTPONLY=True,
 )
 
 CORS(
