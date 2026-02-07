@@ -242,26 +242,6 @@ def admin_clients_page():
 
     return send_from_directory("admin_ui", "clients.html")
 
-# Admin Clients Info
-@app.route("/admin/clients-info", methods=["GET"])
-def admin_clients_info():
-    if not is_admin():
-        return jsonify({"error": "Unauthorized"}), 401
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT client_code, full_name, status, created_at
-        FROM clients
-        ORDER BY created_at DESC
-    """)
-
-    rows = [dict(row) for row in cur.fetchall()]
-    conn.close()
-    return jsonify(rows)
-
-
 
 # Admin logout
 @app.route("/admin/logout", methods=["POST"])
@@ -374,9 +354,9 @@ def approve_client(client_id):
 
 
 # /admin/clients-info must include id
-@app.route("/admin/clients-info")
+@app.route("/admin/clients-info", methods=["GET"])
 def admin_clients_info():
-    if not session.get("is_admin"):
+    if not is_admin():
         return jsonify({"error": "Unauthorized"}), 401
 
     conn = get_db()
@@ -391,7 +371,6 @@ def admin_clients_info():
     conn.close()
 
     return jsonify([dict(row) for row in rows])
-
 
 
 
