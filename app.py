@@ -39,7 +39,8 @@ CORS(
     supports_credentials=True,
     origins=[
         "https://wp.studio8maf.com",
-        "https://studio8maf.com"
+        "https://studio8maf.com",
+	"https://dev-api.studio8maf.com"
     ]
 )
 
@@ -47,9 +48,9 @@ CORS(
 # Paths / Config
 # -------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "studio8.db")
+DB_PATH = "/home/ubuntu/studio8-backend/studio8.db"
+UPLOAD_DIR = "/home/ubuntu/studio8-backend/uploads"
 
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "pdf"}
@@ -68,6 +69,87 @@ def get_db():
 def is_admin():
     return session.get("is_admin") is True
 
+# ===================
+# ADMIN READ-ONLY APIs
+# ===================
+
+@app.route("/admin/training-logins", methods=["GET"])
+def admin_training_logins():
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            tl.id,
+            c.client_code,
+            c.full_name,
+            tl.service_id,
+            tl.proof_filename,
+            tl.logged_at
+        FROM training_logins tl
+        JOIN clients c ON c.id = tl.client_id
+        ORDER BY tl.logged_at DESC
+    """)
+
+    rows = [dict(row) for row in cur.fetchall()]
+    conn.close()
+    return jsonify(rows)
+
+
+@app.route("/admin/membership-payments", methods=["GET"])
+def admin_membership_payments():
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            mp.id,
+            c.client_code,
+            c.full_name,
+            mp.proof_filename,
+            mp.logged_at
+        FROM membership_payments mp
+        JOIN clients c ON c.id = mp.client_id
+        ORDER BY mp.logged_at DESC
+    """)
+
+    rows = [dict(row) for row in cur.fetchall()]
+    conn.close()
+    return jsonify(rows)
+
+
+@app.route("/admin/payments", methods=["GET"])
+def admin_payments():
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT *
+        FROM payments
+        ORDER BY created_at DESC
+    """)
+
+    rows = [dict(row) for row in cur.fetchall()]
+    conn.close()
+    return jsonify(rows)
+
+# expose uploads
+@app.route("/uploads/<path:filename>")
+def uploaded_file(filename):
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 401
+    return send_from_directory(UPLOAD_DIR, filename)
+
+
 # -------------------
 # Health check
 # -------------------
@@ -84,12 +166,13 @@ def health():
 def admin_login_page():
     return send_from_directory("admin_ui", "login.html")
 
+# Admin home page
 @app.route("/admin")
-def admin_dashboard_page():
+def admin_home():
     if not session.get("is_admin"):
         return jsonify({"error": "Unauthorized"}), 401
 
-    return send_from_directory("admin_ui", "dashboard.html")
+    return send_from_directory("admin_ui", "index.html")
 
 # Admin login API
 @app.route("/admin/login", methods=["POST"])
@@ -142,6 +225,43 @@ def admin_login():
     session["admin_id"] = admin["id"]
 
     return jsonify({"success": True})
+
+# Admin training Logs
+@app.route("/admin/training-logs")
+def admin_training_logs_page():
+    if not session.get("is_admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    return send_from_directory("admin_ui", "dashboard.html")
+
+# Admin Clients
+@app.route("/admin/clients")
+def admin_clients_page():
+    if not session.get("is_admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    return send_from_directory("admin_ui", "clients.html")
+
+# Admin Clients Info
+@app.route("/admin/clients-info", methods=["GET"])
+def admin_clients_info():
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT client_code, full_name, status, created_at
+        FROM clients
+        ORDER BY created_at DESC
+    """)
+
+    rows = [dict(row) for row in cur.fetchall()]
+    conn.close()
+    return jsonify(rows)
+
+
 
 # Admin logout
 @app.route("/admin/logout", methods=["POST"])
@@ -459,4 +579,4 @@ def logout():
 # Run
 # -------------------
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5001, debug=False)
+    app.run(host="127.0.0.1", port=5101, debug=False)

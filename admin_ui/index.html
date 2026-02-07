@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Studio8 Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background: #f7f7f7;
+    }
+    h1 { color: #b30000; }
+    .card {
+      background: #fff;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    }
+    a {
+      display: inline-block;
+      margin-top: 10px;
+      text-decoration: none;
+      background: #0b2c44;
+      color: #fff;
+      padding: 10px 15px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>DEV ENV — NOT LIVE</h1>
+
+<div class="card">
+  <h2>Training Logs</h2>
+  <p>View uploaded training proofs and session history.</p>
+  <a href="/admin/training-logs">Open</a>
+</div>
+
+<div class="card">
+  <h2>Clients</h2>
+  <p>View registered clients and membership status.</p>
+  <a href="/admin/clients">Open</a>
+</div>
+
+<form method="post" action="/admin/logout">
+  <button style="margin-top:20px;">Logout</button>
+</form>
+
+</body>
+</html>
+

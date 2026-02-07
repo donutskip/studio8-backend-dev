@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Studio8 Admin Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="font-family:sans-serif;padding:60px">
+
+<h2>Studio8 Admin</h2>
+
+<input id="user" placeholder="Username"><br><br>
+<input id="pass" type="password" placeholder="Password"><br><br>
+<button type="button" onclick="login()">Login</button>
+
+<p id="msg" style="color:red"></p>
+
+<script>
+async function login() {
+  const res = await fetch("/admin/login", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: user.value,
+      password: pass.value
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    msg.textContent = data.error || "Login failed";
+    return;
+  }
+
+  location.href = "/admin";
+}
+</script>
+
+</body>
+</html>
+
