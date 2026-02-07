@@ -347,6 +347,56 @@ def register():
         return jsonify({"error": "Internal server error"}), 500
 
 # -------------------
+# Admin: Promote client to MEMBER
+# -------------------
+@app.route("/admin/clients/<int:client_id>/approve", methods=["POST"])
+def approve_client(client_id):
+    if not session.get("is_admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE clients
+        SET status = 'MEMBER'
+        WHERE id = ?
+    """, (client_id,))
+
+    if cur.rowcount == 0:
+        conn.close()
+        return jsonify({"error": "Client not found"}), 404
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
+
+
+# /admin/clients-info must include id
+@app.route("/admin/clients-info")
+def admin_clients_info():
+    if not session.get("is_admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, client_code, full_name, status, created_at
+        FROM clients
+        ORDER BY created_at DESC
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    return jsonify([dict(row) for row in rows])
+
+
+
+
+
+# -------------------
 # Client dropdown
 # -------------------
 @app.route("/clients", methods=["GET"])
