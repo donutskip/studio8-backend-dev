@@ -44,18 +44,53 @@ fetch("/admin/clients-info", { credentials: "include" })
   .then(res => res.json())
   .then(data => {
     const tbody = document.querySelector("#clientsTable tbody");
+
     data.forEach(c => {
       const row = document.createElement("tr");
+
+      let actionBtn = "";
+      if (c.status !== "MEMBER") {
+        actionBtn = `
+          <button onclick="approveClient(${c.id})"
+            style="padding:6px 10px;background:#0b2c44;color:#fff;border:none;border-radius:4px;cursor:pointer;">
+            Approve Member
+          </button>
+        `;
+      } else {
+        actionBtn = `<span style="color:green;font-weight:bold;">✓ Member</span>`;
+      }
+
       row.innerHTML = `
         <td>${c.client_code}</td>
         <td>${c.full_name}</td>
         <td>${c.status}</td>
         <td>${c.created_at}</td>
+        <td>${actionBtn}</td>
       `;
+
       tbody.appendChild(row);
     });
   });
+
+function approveClient(clientId) {
+  if (!confirm("Approve this client as MEMBER?")) return;
+
+  fetch(`/admin/clients/${clientId}/approve`, {
+    method: "POST",
+    credentials: "include"
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert("Client approved!");
+      location.reload();
+    } else {
+      alert(data.error || "Failed");
+    }
+  });
+}
 </script>
+
 
 </body>
 </html>
